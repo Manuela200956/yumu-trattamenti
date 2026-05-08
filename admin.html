@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YUMU Admin — Pannello di Gestione</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+:root{--deep:#0d2b4e;--blue:#1565a8;--teal:#0891b2;--cyan:#22d3ee;--cream:#e8f5f0;--warm:#dff0ea;--sand:#d4e8e0;--text:#1e293b;--muted:#4a6b5d;--light:#7a9e8e;--white:#f0faf5;--sidebar-w:260px;--red:#ef4444;--green:#059669;}
+*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Outfit',sans-serif;color:var(--text);background:#f5f9f7;overflow-x:hidden;}
+#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,var(--deep),#0a3d62);display:flex;align-items:center;justify-content:center;z-index:9999;}
+.login-box{background:rgba(240,250,245,0.05);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:48px 40px;width:380px;text-align:center;}
+.login-logo{font-size:32px;font-weight:700;letter-spacing:4px;background:linear-gradient(135deg,var(--cyan),var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.login-sub{font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:32px;letter-spacing:1px;}
+.login-box input{width:100%;padding:14px 18px;border-radius:12px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);color:white;font-family:'Outfit',sans-serif;font-size:15px;outline:none;margin-bottom:14px;text-align:center;letter-spacing:3px;}
+.login-box input:focus{border-color:var(--teal);}
+.login-btn{width:100%;padding:15px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--teal),var(--blue));color:white;font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all .3s;}
+.login-btn:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(8,145,178,.4);}
+.login-hint{font-size:11px;color:rgba(255,255,255,0.25);margin-top:16px;}
+.login-error{color:#f87171;font-size:13px;margin-bottom:12px;display:none;}
+#app{display:none;min-height:100vh;}
+.sidebar{position:fixed;top:0;left:0;width:var(--sidebar-w);height:100vh;background:var(--deep);display:flex;flex-direction:column;overflow-y:auto;z-index:100;transition:transform .3s;}
+.sidebar-logo{padding:28px 24px 20px;border-bottom:1px solid rgba(255,255,255,0.07);}
+.logo-text{font-size:22px;font-weight:700;letter-spacing:3px;background:linear-gradient(135deg,var(--cyan),var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.logo-sub{font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:2px;text-transform:uppercase;margin-top:4px;}
+.sidebar-section{padding:14px 12px 4px;}
+.sidebar-section-label{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.25);padding:0 12px;margin-bottom:6px;}
+.nav-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;cursor:pointer;transition:all .2s;color:rgba(255,255,255,0.55);font-size:13px;margin-bottom:2px;border:none;background:none;width:100%;text-align:left;font-family:'Outfit',sans-serif;}
+.nav-item:hover{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.85);}
+.nav-item.active{background:rgba(8,145,178,0.2);color:var(--cyan);font-weight:600;}
+.nav-icon{font-size:16px;width:22px;text-align:center;flex-shrink:0;}
+.nav-badge{margin-left:auto;background:var(--teal);color:white;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;}
+.sidebar-footer{margin-top:auto;padding:16px 12px;border-top:1px solid rgba(255,255,255,0.07);}
+.view-site-btn{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;background:rgba(8,145,178,0.15);color:var(--cyan);font-size:13px;text-decoration:none;transition:all .2s;margin-bottom:8px;}
+.view-site-btn:hover{background:rgba(8,145,178,0.25);}
+.logout-btn{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;cursor:pointer;background:none;border:none;color:rgba(255,255,255,0.35);font-size:13px;font-family:'Outfit',sans-serif;width:100%;transition:all .2s;}
+.logout-btn:hover{color:#f87171;}
+.main{margin-left:var(--sidebar-w);min-height:100vh;}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(245,249,247,0.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,0.06);padding:14px 32px;display:flex;align-items:center;justify-content:space-between;}
+.topbar-title{font-family:'Playfair Display',serif;font-size:22px;color:var(--deep);font-weight:700;}
+.fb-badge{background:linear-gradient(135deg,rgba(8,145,178,.1),rgba(21,101,168,.1));color:var(--teal);font-size:11px;font-weight:600;padding:6px 14px;border-radius:20px;display:flex;align-items:center;gap:6px;}
+.fb-dot{width:8px;height:8px;border-radius:50%;background:var(--green);}
+.content{padding:32px;max-width:960px;}
+.panel{display:none;animation:fadeIn .3s ease;}
+.panel.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.card{background:white;border-radius:16px;border:1px solid rgba(0,0,0,0.06);padding:28px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.03);}
+.card-title{font-family:'Playfair Display',serif;font-size:18px;color:var(--deep);margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.stat-card{background:white;border-radius:16px;padding:22px 20px;border:1px solid rgba(0,0,0,0.06);}
+.stat-value{font-size:32px;font-weight:700;color:var(--deep);line-height:1;}
+.stat-label{font-size:11px;color:var(--light);margin-top:6px;font-weight:500;letter-spacing:.5px;text-transform:uppercase;}
+.stat-icon{font-size:28px;margin-bottom:12px;}
+.form-group{margin-bottom:16px;}
+.form-label{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;display:block;letter-spacing:.5px;}
+.form-input,.form-textarea{width:100%;padding:11px 14px;border:1px solid var(--sand);border-radius:10px;background:#f8fdfb;font-family:'Outfit',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border .2s;}
+.form-input:focus,.form-textarea:focus{border-color:var(--teal);background:white;}
+.form-textarea{height:90px;resize:vertical;}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.form-hint{font-size:11px;color:var(--light);margin-top:4px;}
+code{background:var(--warm);padding:1px 6px;border-radius:4px;font-size:11px;}
+.btn{padding:11px 22px;border-radius:10px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;display:inline-flex;align-items:center;gap:7px;}
+.btn-primary{background:linear-gradient(135deg,var(--teal),var(--blue));color:white;}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(8,145,178,.3);}
+.btn-secondary{background:var(--warm);color:var(--teal);border:1px solid var(--sand);}
+.btn-secondary:hover{background:var(--sand);}
+.btn-danger{background:rgba(239,68,68,.08);color:var(--red);border:1px solid rgba(239,68,68,.2);}
+.btn-danger:hover{background:rgba(239,68,68,.15);}
+.btn-ghost{background:none;border:1px solid var(--sand);color:var(--muted);}
+.btn-ghost:hover{background:var(--warm);}
+.btn-full{width:100%;justify-content:center;padding:13px;font-size:14px;}
+.btn-sm{padding:7px 14px;font-size:12px;border-radius:8px;}
+.treat-row{display:flex;align-items:center;gap:14px;padding:14px 16px;background:#f8fdfb;border-radius:12px;border:1px solid var(--sand);margin-bottom:10px;transition:all .2s;}
+.treat-row:hover{border-color:rgba(8,145,178,.2);background:white;}
+.sector-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;}
+.sector-nav-card{padding:18px;border-radius:14px;border:1px solid var(--sand);background:white;cursor:pointer;transition:all .25s;text-align:center;}
+.sector-nav-card:hover{border-color:rgba(8,145,178,.3);transform:translateY(-2px);box-shadow:0 8px 24px rgba(8,145,178,.08);}
+.system-list-item{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-radius:12px;border:1px solid var(--sand);background:white;cursor:pointer;transition:all .2s;margin-bottom:8px;}
+.system-list-item:hover{border-color:rgba(8,145,178,.3);}
+.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:20px;font-size:12px;color:var(--light);flex-wrap:wrap;}
+.bc-link{cursor:pointer;color:var(--teal);font-weight:500;}
+.bc-link:hover{text-decoration:underline;}
+.bc-current{color:var(--deep);font-weight:600;}
+.add-form-wrap{background:white;border:2px solid var(--teal);border-radius:16px;padding:24px;margin-bottom:16px;animation:slideDown .3s ease;}
+@keyframes slideDown{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);}}
+.empty-state{text-align:center;padding:48px 20px;}
+.empty-icon{font-size:48px;margin-bottom:14px;opacity:.4;}
+.notif{position:fixed;top:20px;right:20px;background:var(--deep);color:white;padding:14px 22px;border-radius:12px;font-size:13px;font-weight:600;z-index:9000;box-shadow:0 8px 32px rgba(0,0,0,.2);opacity:0;transform:translateY(-10px) scale(.97);transition:all .3s;pointer-events:none;}
+.notif.show{opacity:1;transform:translateY(0) scale(1);}
+.notif.success{background:var(--green);}
+.notif.error{background:var(--red);}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:5000;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:white;border-radius:18px;padding:32px;max-width:480px;width:90%;animation:fadeIn .2s ease;}
+.modal-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--deep);margin-bottom:10px;}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.6;}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;}
+.mobile-toggle{display:none;position:fixed;top:14px;left:14px;z-index:200;width:40px;height:40px;border-radius:10px;background:var(--deep);border:none;cursor:pointer;color:white;font-size:18px;align-items:center;justify-content:center;}
+@media(max-width:768px){.sidebar{transform:translateX(-100%);}.sidebar.open{transform:translateX(0);}.main{margin-left:0;}.mobile-toggle{display:flex;}.stats-grid{grid-template-columns:1fr 1fr;}.content{padding:16px;padding-top:60px;}.form-grid-2,.form-grid-3{grid-template-columns:1fr;}.topbar{padding:14px 16px 14px 60px;}}
+</style>
+</head>
+<body>
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">YUMU</div>
+    <div class="login-sub">Pannello di Amministrazione</div>
+    <div class="login-error" id="loginError">Password errata. Riprova.</div>
+    <input type="password" id="loginPass" placeholder="Inserisci la password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="login-btn" onclick="doLogin()">Accedi →</button>
+    <div class="login-hint">Password predefinita: yumu2026</div>
+  </div>
+</div>
+<div class="notif" id="notif"></div>
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle">Conferma</div>
+    <div class="modal-sub" id="modalSub"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Annulla</button>
+      <button class="btn btn-danger" id="modalConfirmBtn">Conferma</button>
+    </div>
+  </div>
+</div>
+<button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+<div id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><div class="logo-text">YUMU</div><div class="logo-sub">Admin Panel</div></div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Generale</div>
+      <button class="nav-item active" onclick="showPanel('dashboard')" id="nav-dashboard"><span class="nav-icon">📊</span> Dashboard</button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Contenuti</div>
+      <button class="nav-item" onclick="showPanel('homepage')" id="nav-homepage"><span class="nav-icon">🏠</span> Homepage</button>
+      <button class="nav-item" onclick="showPanel('chisono')" id="nav-chisono"><span class="nav-icon">👤</span> Chi Sono</button>
+      <button class="nav-item" onclick="showPanel('servizi')" id="nav-servizi"><span class="nav-icon">✨</span> Servizi</button>
+      <button class="nav-item" onclick="showPanel('testimonianze')" id="nav-testimonianze"><span class="nav-icon">💬</span> Testimonianze</button>
+      <button class="nav-item" onclick="showPanel('contatti')" id="nav-contatti"><span class="nav-icon">📞</span> Contatti</button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Shop</div>
+      <button class="nav-item" onclick="showPanel('trattamenti')" id="nav-trattamenti"><span class="nav-icon">💊</span> Trattamenti <span class="nav-badge" id="sidebarCount">0</span></button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Sistema</div>
+      <button class="nav-item" onclick="showPanel('impostazioni')" id="nav-impostazioni"><span class="nav-icon">⚙️</span> Impostazioni</button>
+    </div>
+    <div class="sidebar-footer">
+      <a href="index.html" target="_blank" class="view-site-btn"><span>🌐</span> Visualizza Sito</a>
+      <button class="logout-btn" onclick="doLogout()"><span>🚪</span> Esci</button>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbarTitle">Dashboard</div>
+      <div class="fb-badge"><div class="fb-dot"></div>Firebase Live</div>
+    </div>
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-icon">💊</div><div class="stat-value" id="st-treat">—</div><div class="stat-label">Trattamenti</div></div>
+          <div class="stat-card"><div class="stat-icon">🧬</div><div class="stat-value">13</div><div class="stat-label">Settori</div></div>
+          <div class="stat-card"><div class="stat-icon">💬</div><div class="stat-value" id="st-testi">—</div><div class="stat-label">Testimonianze</div></div>
+          <div class="stat-card"><div class="stat-icon">🔥</div><div class="stat-value" style="font-size:14px;margin-top:8px;">Online</div><div class="stat-label">Firebase</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">💊 Trattamenti per Settore</div>
+          <div id="sectorStats"><div style="text-align:center;padding:20px;color:var(--light);">Caricamento...</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🚀 Azioni Rapide</div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            <button class="btn btn-secondary" onclick="showPanel('trattamenti')">➕ Aggiungi Trattamento</button>
+            <button class="btn btn-secondary" onclick="showPanel('testimonianze')">💬 Nuova Testimonianza</button>
+            <button class="btn btn-secondary" onclick="showPanel('homepage')">✏️ Modifica Homepage</button>
+            <a href="index.html" target="_blank" class="btn btn-ghost" style="text-decoration:none;">🌐 Vedi Sito</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- HOMEPAGE -->
+      <div class="panel" id="panel-homepage">
+        <div class="card">
+          <div class="card-title">🏠 Hero Section</div>
+          <div class="form-group"><label class="form-label">Badge</label><input class="form-input" id="hp-badge" placeholder="Trattamenti Bioenergetici"/></div>
+          <div class="form-group"><label class="form-label">Titolo principale</label><input class="form-input" id="hp-title"/><div class="form-hint">Usa <code>&lt;em&gt;testo&lt;/em&gt;</code> per il corsivo colorato</div></div>
+          <div class="form-group"><label class="form-label">Testo descrittivo</label><textarea class="form-textarea" id="hp-text"></textarea></div>
+          <div class="form-grid-2">
+            <div class="form-group"><label class="form-label">Bottone principale</label><input class="form-input" id="hp-btn1"/></div>
+            <div class="form-group"><label class="form-label">Bottone secondario</label><input class="form-input" id="hp-btn2"/></div>
+          </div>
+          <button class="btn btn-primary btn-full" onclick="saveHomepage()">💾 Salva su Firebase</button>
+        </div>
+      </div>
+
+      <!-- CHI SONO -->
+      <div class="panel" id="panel-chisono">
+        <div class="card">
+          <div class="card-title">👤 Sezione Chi Sono</div>
+          <div class="form-group"><label class="form-label">Titolo</label><input class="form-input" id="cs-title"/></div>
+          <div class="form-group"><label class="form-label">Primo paragrafo</label><textarea class="form-textarea" id="cs-text1"></textarea></div>
+          <div class="form-group"><label class="form-label">Secondo paragrafo</label><textarea class="form-textarea" id="cs-text2"></textarea></div>
+          <div class="form-group"><label class="form-label">Emoji visuale</label><input class="form-input" id="cs-emoji" style="font-size:22px;"/></div>
+          <button class="btn btn-primary btn-full" onclick="saveChiSono()">💾 Salva su Firebase</button>
+        </div>
+      </div>
+
+      <!-- SERVIZI -->
+      <div class="panel" id="panel-servizi">
+        <div class="card">
+          <div class="card-title">✨ Sezione Servizi</div>
+          <div id="serviziList"></div>
+          <button class="btn btn-primary btn-full" onclick="saveServizi()">💾 Salva su Firebase</button>
+        </div>
+      </div>
+
+      <!-- TESTIMONIANZE -->
+      <div class="panel" id="panel-testimonianze">
+        <div id="addTestiArea"></div>
+        <div class="card">
+          <div class="card-title">💬 Testimonianze <button class="btn btn-secondary btn-sm" style="margin-left:auto;" onclick="showAddTesti()">➕ Aggiungi</button></div>
+          <div id="testiList"></div>
+        </div>
+      </div>
+
+      <!-- CONTATTI -->
+      <div class="panel" id="panel-contatti">
+        <div class="card">
+          <div class="card-title">📞 Informazioni di Contatto</div>
+          <div class="form-grid-2">
+            <div class="form-group"><label class="form-label">📧 Email</label><input class="form-input" id="ct-email"/></div>
+            <div class="form-group"><label class="form-label">📱 Telefono</label><input class="form-input" id="ct-phone"/></div>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group"><label class="form-label">📍 Sede</label><input class="form-input" id="ct-address"/></div>
+            <div class="form-group"><label class="form-label">⏰ Orari</label><input class="form-input" id="ct-hours"/></div>
+          </div>
+          <button class="btn btn-primary btn-full" onclick="saveContatti()">💾 Salva su Firebase</button>
+        </div>
+      </div>
+
+      <!-- TRATTAMENTI -->
+      <div class="panel" id="panel-trattamenti">
+        <div class="breadcrumb" id="treatBC"></div>
+        <div id="treatContent"></div>
+      </div>
+
+      <!-- IMPOSTAZIONI -->
+      <div class="panel" id="panel-impostazioni">
+        <div class="card">
+          <div class="card-title">🔐 Cambia Password</div>
+          <div class="form-group"><label class="form-label">Password attuale</label><input type="password" class="form-input" id="op"/></div>
+          <div class="form-group"><label class="form-label">Nuova password</label><input type="password" class="form-input" id="np"/></div>
+          <div class="form-group"><label class="form-label">Conferma nuova password</label><input type="password" class="form-input" id="np2"/></div>
+          <button class="btn btn-primary" onclick="changePassword()">🔐 Cambia Password</button>
+        </div>
+        <div class="card">
+          <div class="card-title">🗑️ Zona Pericolosa</div>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.7;">Queste azioni cancellano i dati da Firebase in modo definitivo.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-danger" onclick="confirmReset('treatments')">🗑️ Cancella tutti i trattamenti</button>
+            <button class="btn btn-danger" onclick="confirmReset('all')">💥 Reset completo</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// FIREBASE
+const firebaseConfig = {
+  apiKey: "AIzaSyAIgVtY9Tya43c2_cb5-YZgeNPZ7GRyZ3A",
+  authDomain: "yumu-trattamenti.firebaseapp.com",
+  projectId: "yumu-trattamenti",
+  storageBucket: "yumu-trattamenti.firebasestorage.app",
+  messagingSenderId: "774486584577",
+  appId: "1:774486584577:web:3ad1278640ddf65a8b7f00"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// SECTORS
+const SECTORS=[
+  {id:"neurological",name:"Sistema Nervoso",icon:"🧠",color:"#0891b2",gradient:"linear-gradient(135deg,#0891b2,#22d3ee)",description:"Cervello, midollo spinale, nervi periferici",systems:[{id:"sn-c",name:"Sistema Nervoso Centrale",treatments:[]},{id:"sn-p",name:"Sistema Nervoso Periferico",treatments:[]},{id:"sn-a",name:"Sistema Nervoso Autonomo",treatments:[]}]},
+  {id:"cardiovascular",name:"Sistema Cardiovascolare",icon:"❤️",color:"#e11d48",gradient:"linear-gradient(135deg,#e11d48,#fb7185)",description:"Cuore, arterie, vene, circolazione",systems:[{id:"cv-h",name:"Cuore e Vasi",treatments:[]},{id:"cv-b",name:"Circolazione Sanguigna",treatments:[]}]},
+  {id:"musculoskeletal",name:"Apparato Muscolo-Scheletrico",icon:"🦴",color:"#059669",gradient:"linear-gradient(135deg,#059669,#34d399)",description:"Ossa, muscoli, articolazioni, tendini",systems:[{id:"ms-b",name:"Sistema Scheletrico",treatments:[]},{id:"ms-m",name:"Sistema Muscolare",treatments:[]},{id:"ms-j",name:"Articolazioni e Tendini",treatments:[]}]},
+  {id:"digestive",name:"Apparato Digerente",icon:"🫁",color:"#d97706",gradient:"linear-gradient(135deg,#d97706,#fbbf24)",description:"Stomaco, intestino, fegato, pancreas",systems:[{id:"di-g",name:"Tratto Gastrointestinale",treatments:[]},{id:"di-l",name:"Fegato e Pancreas",treatments:[]}]},
+  {id:"respiratory",name:"Apparato Respiratorio",icon:"💨",color:"#1565a8",gradient:"linear-gradient(135deg,#1565a8,#74b9ff)",description:"Polmoni, bronchi, vie aeree",systems:[{id:"re-l",name:"Polmoni e Bronchi",treatments:[]}]},
+  {id:"endocrine",name:"Sistema Endocrino",icon:"⚡",color:"#9333ea",gradient:"linear-gradient(135deg,#9333ea,#c084fc)",description:"Tiroide, surrenali, ipofisi, ormoni",systems:[{id:"en-t",name:"Tiroide e Metabolismo",treatments:[]},{id:"en-a",name:"Ghiandole Surrenali",treatments:[]},{id:"en-i",name:"Ipofisi e Ipotalamo",treatments:[]}]},
+  {id:"immune",name:"Sistema Immunitario",icon:"🛡️",color:"#0891b2",gradient:"linear-gradient(135deg,#0891b2,#67e8f9)",description:"Difese, linfociti, risposta immunitaria",systems:[{id:"im-d",name:"Difese Naturali",treatments:[]},{id:"im-a",name:"Risposta Autoimmune",treatments:[]}]},
+  {id:"urinary",name:"Apparato Urinario",icon:"💧",color:"#0284c7",gradient:"linear-gradient(135deg,#0284c7,#38bdf8)",description:"Reni, vescica, vie urinarie",systems:[{id:"ur-k",name:"Reni e Vie Urinarie",treatments:[]}]},
+  {id:"visual",name:"Sistema Visivo",icon:"👁️",color:"#6366f1",gradient:"linear-gradient(135deg,#6366f1,#a5b4fc)",description:"Occhi, retina, nervo ottico",systems:[{id:"vi-o",name:"Occhio e Strutture Oculari",treatments:[]},{id:"vi-n",name:"Nervo Ottico e Via Visiva",treatments:[]}]},
+  {id:"cutaneous",name:"Sistema Cutaneo",icon:"🫧",color:"#f472b6",gradient:"linear-gradient(135deg,#db2777,#f9a8d4)",description:"Pelle, derma, epidermide",systems:[{id:"cu-p",name:"Pelle e Derma",treatments:[]},{id:"cu-a",name:"Annessi Cutanei",treatments:[]}]},
+  {id:"lymphatic",name:"Sistema Linfatico",icon:"🫀",color:"#14b8a6",gradient:"linear-gradient(135deg,#14b8a6,#5eead4)",description:"Linfonodi, vasi linfatici, milza",systems:[{id:"ly-v",name:"Vasi Linfatici e Drenaggio",treatments:[]},{id:"ly-o",name:"Linfonodi e Organi Linfatici",treatments:[]}]},
+  {id:"reproductive",name:"Apparato Riproduttivo",icon:"🌸",color:"#e879a0",gradient:"linear-gradient(135deg,#be185d,#f9a8d4)",description:"Sistema riproduttivo femminile e maschile",systems:[{id:"rp-f",name:"Apparato Riproduttivo Femminile",treatments:[]},{id:"rp-m",name:"Apparato Riproduttivo Maschile",treatments:[]}]},
+  {id:"venous",name:"Sistema Venoso",icon:"🩸",color:"#7c3aed",gradient:"linear-gradient(135deg,#7c3aed,#c4b5fd)",description:"Vene, ritorno venoso, microcircolo",systems:[{id:"ve-p",name:"Vene e Ritorno Venoso",treatments:[]},{id:"ve-m",name:"Microcircolo Venoso",treatments:[]}]}
+];
+
+// LOGIN
+function getPass(){return localStorage.getItem('yumu_admin_pass')||'yumu2026';}
+function doLogin(){
+  if(document.getElementById('loginPass').value===getPass()){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('app').style.display='block';
+    initApp();
+  }else{const e=document.getElementById('loginError');e.style.display='block';setTimeout(()=>e.style.display='none',3000);}
+}
+function doLogout(){document.getElementById('app').style.display='none';document.getElementById('loginScreen').style.display='flex';document.getElementById('loginPass').value='';}
+
+// INIT
+async function initApp(){
+  await loadTreatments();
+  renderDashboard();
+  loadAllForms();
+}
+
+// FIREBASE HELPERS
+async function fbSave(id,data){await db.collection('site').doc(id).set(data);}
+async function fbLoad(id){const d=await db.collection('site').doc(id).get();return d.exists?d.data():null;}
+async function loadTreatments(){
+  try{const d=await fbLoad('treatments');if(d){SECTORS.forEach(s=>s.systems.forEach(sys=>{if(d[sys.id])sys.treatments=d[sys.id];}));}}catch(e){}
+  updateBadge();
+}
+async function saveTreatments(){
+  const d={};SECTORS.forEach(s=>s.systems.forEach(sys=>{if(sys.treatments.length)d[sys.id]=sys.treatments;}));
+  await fbSave('treatments',d);updateBadge();
+}
+function totalT(){return SECTORS.reduce((n,s)=>n+s.systems.reduce((m,sys)=>m+sys.treatments.length,0),0);}
+function updateBadge(){document.getElementById('sidebarCount').textContent=totalT();}
+
+// NAVIGATION
+const panelTitles={dashboard:'Dashboard',homepage:'Homepage',chisono:'Chi Sono',servizi:'Servizi',testimonianze:'Testimonianze',contatti:'Contatti',trattamenti:'Trattamenti',impostazioni:'Impostazioni'};
+function showPanel(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  const nav=document.getElementById('nav-'+id);if(nav)nav.classList.add('active');
+  document.getElementById('topbarTitle').textContent=panelTitles[id]||id;
+  if(id==='dashboard')renderDashboard();
+  if(id==='trattamenti'){treatView='sectors';renderTreatments();}
+  if(id==='testimonianze')renderTestimonianze();
+  if(id==='servizi')renderServizi();
+  document.getElementById('sidebar').classList.remove('open');
+}
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');}
+
+// DASHBOARD
+async function renderDashboard(){
+  document.getElementById('st-treat').textContent=totalT();
+  try{const s=await db.collection('testimonials').get();document.getElementById('st-testi').textContent=s.size;}catch(e){document.getElementById('st-testi').textContent='0';}
+  const total=totalT();
+  document.getElementById('sectorStats').innerHTML=SECTORS.map(s=>{
+    const n=s.systems.reduce((m,sys)=>m+sys.treatments.length,0);
+    const pct=total>0?Math.round(n/total*100):0;
+    return`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,0.04);"><span style="font-size:20px;width:28px;text-align:center;">${s.icon}</span><div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--deep);margin-bottom:4px;">${s.name}</div><div style="height:6px;background:var(--warm);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${s.gradient};border-radius:4px;"></div></div></div><div style="font-size:12px;color:var(--teal);font-weight:700;width:36px;text-align:right;">${n}</div></div>`;
+  }).join('');
+}
+
+// HOMEPAGE
+async function loadHomepageForm(){
+  const d=await fbLoad('homepage')||{};
+  document.getElementById('hp-badge').value=d.badge||'Trattamenti Bioenergetici';
+  document.getElementById('hp-title').value=d.title||'Riequilibra la tua <em>energia cellulare</em>';
+  document.getElementById('hp-text').value=d.text||'Frequenze, campo morfogenetico e informazione biologica al servizio del tuo benessere. Per persone, animali e piante.';
+  document.getElementById('hp-btn1').value=d.btn1||'🛒 Esplora i Trattamenti';
+  document.getElementById('hp-btn2').value=d.btn2||'Chi Sono →';
+}
+async function saveHomepage(){
+  await fbSave('homepage',{badge:document.getElementById('hp-badge').value,title:document.getElementById('hp-title').value,text:document.getElementById('hp-text').value,btn1:document.getElementById('hp-btn1').value,btn2:document.getElementById('hp-btn2').value});
+  showNotif('✅ Homepage salvata!','success');
+}
+
+// CHI SONO
+async function loadChiSonoForm(){
+  const d=await fbLoad('chisono')||{};
+  document.getElementById('cs-title').value=d.title||'Un approccio unico al benessere';
+  document.getElementById('cs-text1').value=d.text1||"Lavoro con il campo morfogenetico e informazionale delle cellule, utilizzando toni binaurali e decreti frequenziali per riequilibrare l'energia a livello profondo.";
+  document.getElementById('cs-text2').value=d.text2||'I miei trattamenti si applicano a persone, animali e piante.';
+  document.getElementById('cs-emoji').value=d.emoji||'🌿';
+}
+async function saveChiSono(){
+  await fbSave('chisono',{title:document.getElementById('cs-title').value,text1:document.getElementById('cs-text1').value,text2:document.getElementById('cs-text2').value,emoji:document.getElementById('cs-emoji').value});
+  showNotif('✅ Chi Sono salvato!','success');
+}
+
+// SERVIZI
+const defaultSrv=[{icon:'🧬',title:'Trattamenti per Persone',text:"Riequilibrio bioenergetico personalizzato attraverso frequenze mirate."},{icon:'🐾',title:'Trattamenti per Animali',text:"Supporto all'equilibrio energetico degli animali."},{icon:'🌾',title:'Trattamenti per Terreni',text:"Tecniche bioenergetiche per l'agricoltura."}];
+async function renderServizi(){
+  const saved=await fbLoad('servizi');
+  const list=(saved&&saved.items)?saved.items:defaultSrv;
+  document.getElementById('serviziList').innerHTML=list.map((s,i)=>`<div style="border:1px solid var(--sand);border-radius:12px;padding:18px;margin-bottom:14px;"><div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal);margin-bottom:12px;">Servizio ${i+1}</div><div class="form-grid-3"><div class="form-group"><label class="form-label">Icona</label><input class="form-input" id="si-${i}" value="${s.icon}" style="font-size:20px;text-align:center;"/></div><div class="form-group" style="grid-column:span 2;"><label class="form-label">Titolo</label><input class="form-input" id="st-${i}" value="${s.title}"/></div></div><div class="form-group"><label class="form-label">Descrizione</label><textarea class="form-textarea" id="sd-${i}" style="height:70px;">${s.text}</textarea></div></div>`).join('');
+}
+async function saveServizi(){
+  const items=defaultSrv.map((_,i)=>({icon:document.getElementById(`si-${i}`).value,title:document.getElementById(`st-${i}`).value,text:document.getElementById(`sd-${i}`).value}));
+  await fbSave('servizi',{items});showNotif('✅ Servizi salvati!','success');
+}
+
+// TESTIMONIANZE
+async function renderTestimonianze(){
+  document.getElementById('addTestiArea').innerHTML='';
+  document.getElementById('testiList').innerHTML='<div style="text-align:center;padding:20px;color:var(--light);">Caricamento...</div>';
+  try{
+    const snap=await db.collection('testimonials').get();
+    if(snap.empty){document.getElementById('testiList').innerHTML='<div class="empty-state"><div class="empty-icon">💬</div><div style="font-size:16px;font-weight:600;color:var(--deep);">Nessuna testimonianza</div></div>';return;}
+    document.getElementById('testiList').innerHTML=snap.docs.map(doc=>{
+      const t={id:doc.id,...doc.data()};
+      const txt=(t.text||'').replace(/'/g,"\\'");const ath=(t.author||'').replace(/'/g,"\\'");const rl=(t.role||'').replace(/'/g,"\\'");
+      return`<div style="display:flex;gap:14px;padding:16px;border-radius:12px;border:1px solid var(--sand);background:white;margin-bottom:10px;align-items:flex-start;"><div style="flex:1;"><div style="color:#f59e0b;font-size:13px;">${'★'.repeat(t.stars||5)}${'☆'.repeat(5-(t.stars||5))}</div><div style="font-size:13px;color:var(--muted);font-style:italic;margin:4px 0 6px;line-height:1.6;">"${t.text}"</div><div style="font-size:12px;font-weight:600;color:var(--deep);">${t.author}</div><div style="font-size:11px;color:var(--light);">${t.role}</div></div><div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;"><button class="btn btn-secondary btn-sm" onclick="showAddTesti('${t.id}','${txt}','${ath}','${rl}',${t.stars||5})">✏️</button><button class="btn btn-danger btn-sm" onclick="deleteTesti('${t.id}')">🗑️</button></div></div>`;
+    }).join('');
+  }catch(e){document.getElementById('testiList').innerHTML='<div style="text-align:center;padding:20px;color:var(--red);">Errore caricamento</div>';}
+}
+function showAddTesti(id,text,author,role,stars){
+  document.getElementById('addTestiArea').innerHTML=`<div class="add-form-wrap"><div style="font-family:'Playfair Display',serif;font-size:18px;color:var(--deep);margin-bottom:18px;">${id?'✏️ Modifica':'➕ Nuova'} Testimonianza</div><div class="form-group"><label class="form-label">Stelle (1-5)</label><input type="number" class="form-input" id="ti-s" min="1" max="5" value="${stars||5}" style="width:80px;"/></div><div class="form-group"><label class="form-label">Testo</label><textarea class="form-textarea" id="ti-t">${text||''}</textarea></div><div class="form-grid-2"><div class="form-group"><label class="form-label">Nome autore</label><input class="form-input" id="ti-a" value="${author||''}" placeholder="Maria R."/></div><div class="form-group"><label class="form-label">Tipo trattamento</label><input class="form-input" id="ti-r" value="${role||''}" placeholder="Trattamento Persona"/></div></div><div style="display:flex;gap:10px;"><button class="btn btn-primary" onclick="saveTesti('${id||''}')">${id?'💾 Salva':'✅ Aggiungi'}</button><button class="btn btn-ghost" onclick="document.getElementById('addTestiArea').innerHTML='';renderTestimonianze()">Annulla</button></div></div>`;
+  document.getElementById('addTestiArea').scrollIntoView({behavior:'smooth'});
+}
+async function saveTesti(eid){
+  const t={stars:parseInt(document.getElementById('ti-s').value)||5,text:document.getElementById('ti-t').value.trim(),author:document.getElementById('ti-a').value.trim(),role:document.getElementById('ti-r').value.trim()};
+  if(!t.text||!t.author){showNotif('⚠️ Compila testo e autore','error');return;}
+  if(eid)await db.collection('testimonials').doc(eid).update(t);
+  else await db.collection('testimonials').add(t);
+  showNotif('✅ Testimonianza salvata!','success');renderTestimonianze();
+}
+function deleteTesti(id){openModal('Elimina Testimonianza','Sei sicura di voler eliminare questa testimonianza?',async()=>{await db.collection('testimonials').doc(id).delete();showNotif('🗑️ Eliminata','success');renderTestimonianze();});}
+
+// CONTATTI
+async function loadContattiForm(){
+  const d=await fbLoad('contatti')||{};
+  document.getElementById('ct-email').value=d.email||'info@yumu.ch';
+  document.getElementById('ct-phone').value=d.phone||'+41 xx xxx xx xx';
+  document.getElementById('ct-address').value=d.address||'Svizzera — Trattamenti a distanza';
+  document.getElementById('ct-hours').value=d.hours||'Lun — Ven: 9:00 — 18:00';
+}
+async function saveContatti(){
+  await fbSave('contatti',{email:document.getElementById('ct-email').value,phone:document.getElementById('ct-phone').value,address:document.getElementById('ct-address').value,hours:document.getElementById('ct-hours').value});
+  showNotif('✅ Contatti salvati!','success');
+}
+
+// TRATTAMENTI
+let treatView='sectors',curSector=null,curSystem=null;
+function renderTreatments(){
+  const bc=document.getElementById('treatBC');const c=document.getElementById('treatContent');
+  if(treatView==='sectors'){
+    bc.innerHTML='<span class="bc-current">Tutti i Settori</span>';
+    c.innerHTML=`<div class="card"><div class="card-title">🗂️ Seleziona Settore</div><div class="sector-grid">${SECTORS.map(s=>{const n=s.systems.reduce((m,sys)=>m+sys.treatments.length,0);return`<div class="sector-nav-card" onclick="openSector('${s.id}')"><div style="font-size:30px;margin-bottom:8px;">${s.icon}</div><div style="font-size:13px;font-weight:600;color:var(--deep);">${s.name}</div><div style="font-size:10px;color:var(--teal);margin-top:4px;font-weight:600;">${n} trattamenti</div></div>`;}).join('')}</div></div>`;
+  }else if(treatView==='systems'){
+    bc.innerHTML=`<span class="bc-link" onclick="treatView='sectors';renderTreatments();">Settori</span><span style="opacity:.4;margin:0 4px;">›</span><span class="bc-current">${curSector.icon} ${curSector.name}</span>`;
+    c.innerHTML=`<div class="card"><div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;"><span style="font-size:36px;">${curSector.icon}</span><div><div style="font-family:'Playfair Display',serif;font-size:22px;color:var(--deep);">${curSector.name}</div><div style="font-size:13px;color:var(--muted);">${curSector.description}</div></div></div>${curSector.systems.map(sys=>{const n=sys.treatments.length;return`<div class="system-list-item" onclick="openSystem('${sys.id}')"><div><div style="font-size:14px;font-weight:600;color:var(--deep);">${sys.name}</div><div style="font-size:11px;color:var(--teal);margin-top:2px;">${n?n+' trattamenti':'Nessun trattamento'}</div></div><div style="display:flex;align-items:center;gap:10px;">${n?`<span style="background:var(--warm);color:var(--teal);font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">${n}</span>`:''}<span style="color:var(--teal);">›</span></div></div>`;}).join('')}</div>`;
+  }else if(treatView==='list'){
+    bc.innerHTML=`<span class="bc-link" onclick="treatView='sectors';renderTreatments();">Settori</span><span style="opacity:.4;margin:0 4px;">›</span><span class="bc-link" onclick="treatView='systems';renderTreatments();">${curSector.icon} ${curSector.name}</span><span style="opacity:.4;margin:0 4px;">›</span><span class="bc-current">${curSystem.name}</span>`;
+    renderTreatList(c);
+  }
+}
+function openSector(id){curSector=SECTORS.find(s=>s.id===id);treatView='systems';renderTreatments();}
+function openSystem(id){curSystem=curSector.systems.find(s=>s.id===id);treatView='list';renderTreatments();}
+function renderTreatList(c){
+  const list=curSystem.treatments;
+  c.innerHTML=`<div id="treatForm"></div><div class="card"><div class="card-title">${curSector.icon} ${curSystem.name}<button class="btn btn-secondary btn-sm" style="margin-left:auto;" onclick="showTreatForm()">➕ Aggiungi</button></div>${!list.length?`<div class="empty-state"><div class="empty-icon">📋</div><div style="font-size:16px;font-weight:600;color:var(--deep);">Nessun trattamento</div><div style="font-size:13px;color:var(--light);margin-top:6px;">Aggiungi il primo!</div></div>`:list.map(t=>`<div class="treat-row"><div style="width:44px;height:44px;min-width:44px;border-radius:10px;background:${curSector.gradient}22;display:flex;align-items:center;justify-content:center;font-size:20px;">${curSector.icon}</div><div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--deep);">${t.name}</div><div style="font-size:11px;color:var(--light);">${t.subtitle||''} ${t.duration?'· '+t.duration:''}</div></div><div style="font-size:12px;color:var(--teal);font-weight:700;margin-right:12px;">${t.price?'CHF '+t.price:''}</div><div style="display:flex;gap:6px;"><button class="btn btn-secondary btn-sm" onclick="showTreatForm('${t.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="deleteTreat('${t.id}')">🗑️</button></div></div>`).join('')}</div>`;
+}
+function showTreatForm(eid){
+  const t=eid?curSystem.treatments.find(x=>x.id===eid):null;
+  document.getElementById('treatForm').innerHTML=`<div class="add-form-wrap"><div style="font-family:'Playfair Display',serif;font-size:18px;color:var(--deep);margin-bottom:18px;">${t?'✏️ Modifica':'➕ Nuovo'} Trattamento</div><div class="form-group"><label class="form-label">Nome *</label><input class="form-input" id="tf-n" value="${t?t.name:''}" placeholder="Es: Riequilibrio Cervicale"/></div><div class="form-group"><label class="form-label">Sottotitolo</label><input class="form-input" id="tf-s" value="${t?t.subtitle||'':''}"/></div><div class="form-group"><label class="form-label">Presentazione (visibile al cliente)</label><textarea class="form-textarea" id="tf-p">${t?t.presentation||'':''}</textarea></div><div class="form-group"><label class="form-label">Descrizione Dettagliata</label><textarea class="form-textarea" id="tf-d">${t?t.description||'':''}</textarea></div><div class="form-group"><label class="form-label">A Chi è Rivolto</label><textarea class="form-textarea" id="tf-tg" style="height:65px;">${t?t.target||'':''}</textarea></div><div class="form-group"><label class="form-label">Benefici (uno per riga)</label><textarea class="form-textarea" id="tf-b">${t&&t.benefits?t.benefits.join('\n'):''}</textarea></div><div class="form-grid-2"><div class="form-group"><label class="form-label">Frequenze Hz</label><input class="form-input" id="tf-hz" value="${t?t.hz||'':''}" placeholder="7.83 – 14 Hz"/></div><div class="form-group"><label class="form-label">Differenziale</label><input class="form-input" id="tf-df" value="${t?t.differential||'':''}" placeholder="Theta-Alpha"/></div></div><div class="form-grid-2"><div class="form-group"><label class="form-label">Durata</label><input class="form-input" id="tf-du" value="${t?t.duration||'':''}" placeholder="45 min"/></div><div class="form-group"><label class="form-label">Prezzo (CHF)</label><input class="form-input" id="tf-pr" value="${t?t.price||'':''}" placeholder="49.90"/></div></div><div class="form-group"><label class="form-label">Parole chiave (virgola)</label><input class="form-input" id="tf-tg2" value="${t&&t.tags?t.tags.join(', '):''}"/></div><div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="btn btn-primary" onclick="saveTreat('${eid||''}')">${t?'💾 Salva':'✅ Aggiungi'}</button><button class="btn btn-ghost" onclick="document.getElementById('treatForm').innerHTML='';renderTreatList(document.getElementById('treatContent'));">Annulla</button></div></div>`;
+  document.getElementById('treatForm').scrollIntoView({behavior:'smooth'});
+}
+async function saveTreat(eid){
+  const nm=document.getElementById('tf-n').value.trim();
+  if(!nm){showNotif('⚠️ Inserisci il nome!','error');return;}
+  const t={id:eid||'t_'+Date.now()+'_'+Math.random().toString(36).substr(2,4),name:nm,subtitle:document.getElementById('tf-s').value.trim(),presentation:document.getElementById('tf-p').value.trim(),description:document.getElementById('tf-d').value.trim(),target:document.getElementById('tf-tg').value.trim(),benefits:document.getElementById('tf-b').value.split('\n').map(b=>b.trim()).filter(b=>b),hz:document.getElementById('tf-hz').value.trim(),differential:document.getElementById('tf-df').value.trim(),duration:document.getElementById('tf-du').value.trim(),price:document.getElementById('tf-pr').value.trim(),tags:document.getElementById('tf-tg2').value.split(',').map(t=>t.trim().toLowerCase()).filter(t=>t)};
+  if(eid){const i=curSystem.treatments.findIndex(x=>x.id===eid);if(i>=0)curSystem.treatments[i]=t;}else curSystem.treatments.push(t);
+  await saveTreatments();
+  showNotif(eid?'✅ Modificato!':'✅ Aggiunto!','success');
+  renderTreatList(document.getElementById('treatContent'));
+}
+function deleteTreat(id){openModal('Elimina Trattamento','Sei sicura di voler eliminare questo trattamento?',async()=>{curSystem.treatments=curSystem.treatments.filter(t=>t.id!==id);await saveTreatments();showNotif('🗑️ Eliminato','success');renderTreatList(document.getElementById('treatContent'));});}
+
+// IMPOSTAZIONI
+function changePassword(){
+  const o=document.getElementById('op').value,n=document.getElementById('np').value,n2=document.getElementById('np2').value;
+  if(o!==getPass()){showNotif('⚠️ Password attuale errata','error');return;}
+  if(n.length<6){showNotif('⚠️ Minimo 6 caratteri','error');return;}
+  if(n!==n2){showNotif('⚠️ Le password non coincidono','error');return;}
+  localStorage.setItem('yumu_admin_pass',n);
+  document.getElementById('op').value='';document.getElementById('np').value='';document.getElementById('np2').value='';
+  showNotif('✅ Password cambiata!','success');
+}
+function confirmReset(type){
+  if(type==='treatments'){openModal('Elimina tutti i trattamenti','Questa azione eliminerà TUTTI i trattamenti da Firebase.',async()=>{SECTORS.forEach(s=>s.systems.forEach(sys=>sys.treatments=[]));await db.collection('site').doc('treatments').delete();updateBadge();showNotif('🗑️ Eliminati','success');renderDashboard();});}
+  else{openModal('Reset completo','Eliminerà TUTTI i dati da Firebase. Sei assolutamente sicura?',async()=>{const s=await db.collection('site').get();for(const d of s.docs)await d.ref.delete();const t=await db.collection('testimonials').get();for(const d of t.docs)await d.ref.delete();showNotif('💥 Reset completato','success');location.reload();});}
+}
+
+// MODAL & NOTIF
+let modalCB=null;
+function openModal(t,s,cb){document.getElementById('modalTitle').textContent=t;document.getElementById('modalSub').textContent=s;modalCB=cb;document.getElementById('modalOverlay').classList.add('open');}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');modalCB=null;}
+document.getElementById('modalConfirmBtn').onclick=function(){closeModal();if(modalCB)modalCB();};
+function showNotif(msg,type=''){const n=document.getElementById('notif');n.textContent=msg;n.className='notif show '+type;setTimeout(()=>n.className='notif',2800);}
+
+// LOAD ALL
+async function loadAllForms(){await Promise.all([loadHomepageForm(),loadChiSonoForm(),loadContattiForm()]);}
+</script>
+</body>
+</html>
