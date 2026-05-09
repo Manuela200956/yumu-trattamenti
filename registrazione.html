@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YUMU — Registrazione e Abbonamento</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Outfit',sans-serif; background:#e8f5f0; min-height:100vh; }
+@media print { body{background:white} .no-print{display:none!important} }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAIgVtY9Tya43c2_cb5-YZgeNPZ7GRyZ3A",
+  authDomain: "yumu-trattamenti.firebaseapp.com",
+  projectId: "yumu-trattamenti",
+  storageBucket: "yumu-trattamenti.firebasestorage.app",
+  messagingSenderId: "774486584577",
+  appId: "1:774486584577:web:3ad1278640ddf65a8b7f00"
+};
+firebase.initializeApp(firebaseConfig);
+window.db = firebase.firestore();
+</script>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const C = {
+  bg:"#e8f5f0", white:"#f0faf5", card:"#f5fdf9", sand:"#d4e8e0",
+  teal:"#0891b2", blue:"#1565a8", deep:"#0d2b4e",
+  text:"#1e293b", muted:"#4a6b5d", light:"#7a9e8e",
+};
+
+const AZIENDA = {
+  nome:"YUMU Sagl", indirizzo:"Via Example 10", citta:"6900 Lugano",
+  paese:"Svizzera", uid:"CHE-123.456.789 MWST", email:"info@yumu.ch",
+};
+
+const PERCORSI = [
+  { id:"mentale",  icon:"🧘", title:"Benessere Mentale",    desc:"Riequilibrio emotivo, gestione dello stress, frequenze per il benessere interiore.", color:"#7c3aed", bg:"#ede9fe", border:"#c4b5fd" },
+  { id:"fisico",   icon:"⚡", title:"Rigenerazione Fisica",  desc:"Trattamenti bioenergetici mirati, protocolli specifici con visualizzazione dello spettro Hz.", color:"#0369a1", bg:"#dff0f8", border:"#7dd3fc" },
+  { id:"animali",  icon:"🐾", title:"Benessere Animali",    desc:"Supporto all'equilibrio energetico degli animali. Frequenze calibrate per ogni specie.", color:"#059669", bg:"#d1fae5", border:"#6ee7b7" },
+  { id:"terreni",  icon:"🌾", title:"Benessere Terreni",    desc:"Tecniche bioenergetiche per l'agricoltura. Riequilibrio del campo morfogenetico del suolo.", color:"#d97706", bg:"#fef3c7", border:"#fcd34d" },
+];
+
+const DEFAULT_PIANI = [
+  { id:"mensile",      label:"Mensile",            giorni:30,  maxDay:3, badge:"",            desc:"Rinnovo ogni mese. Max 3 trattamenti/giorno." },
+  { id:"trimestrale",  label:"Trimestrale",        giorni:90,  maxDay:3, badge:"Popolare",    desc:"Risparmio rispetto al mensile. Max 3 trattamenti/giorno." },
+  { id:"annuale",      label:"Annuale",            giorni:365, maxDay:3, badge:"Miglior prezzo", desc:"Massimo risparmio. Max 3 trattamenti/giorno." },
+  { id:"singolo",      label:"Trattamento Singolo",giorni:30,  maxDay:1, badge:"",            desc:"Acquisto singolo al prezzo di listino. Nessuno sconto." },
+];
+
+const PRIVACY_TEXT = `Informativa sulla Privacy ai sensi del GDPR (Reg. UE 2016/679) e della LPD svizzera.
+
+Titolare del trattamento: YUMU Sagl
+
+Dati raccolti: Nome, Cognome, Data di Nascita, Indirizzo, Cellulare, Email.
+
+Finalità: Erogazione dei servizi di trattamento bioenergetico, fatturazione, comunicazioni relative al servizio.
+
+Base giuridica: Esecuzione del contratto di servizio e adempimenti fiscali.
+
+Conservazione: I dati sono conservati per la durata del rapporto contrattuale e per il periodo previsto dalla legge per gli obbligali fiscali.
+
+Dati bancari: I pagamenti sono gestiti tramite gateway certificati PCI-DSS (es. Stripe). YUMU non memorizza mai i dati completi delle carte di credito.
+
+Diritti dell'interessato: Hai diritto di accedere ai tuoi dati, rettificarli, cancellarli (diritto all'oblio), limitarne il trattamento, opporti al trattamento e richiedere la portabilità. Per esercitare questi diritti scrivi a: privacy@yumu.ch
+
+Revoca del consenso: Puoi revocare il consenso in qualsiasi momento tramite l'area clienti o contattandoci all'indirizzo sopra indicato.`;
+
+const DISCLAIMER_TEXT = `I trattamenti quantistici e bioenergetici offerti da YUMU non sostituiscono in alcun modo pareri medici, diagnosi cliniche o cure farmacologiche. L'utente dichiara di utilizzare il servizio come supporto bioenergetico complementare alla medicina convenzionale. In caso di patologie o disturbi, si raccomanda di consultare sempre il proprio medico curante.`;
+
+// STYLES
+const inp = {width:"100%",padding:"12px 16px",borderRadius:10,border:"1px solid #d4e8e0",background:"#f0faf5",fontFamily:"inherit",fontSize:14,color:"#1e293b",outline:"none"};
+const lbl = {fontSize:13,fontWeight:500,color:"#1e293b",marginBottom:4,display:"block"};
+const btnP = {background:"linear-gradient(135deg,#0891b2,#1565a8)",color:"#fff",border:"none",padding:"14px 32px",borderRadius:12,fontSize:15,fontWeight:500,cursor:"pointer",fontFamily:"inherit"};
+const btnB = {...btnP,background:"transparent",color:"#0891b2",border:"1px solid #d4e8e0"};
+const btnD = {...btnP,opacity:0.4,cursor:"not-allowed"};
+const chk  = {width:18,height:18,accentColor:"#0891b2",cursor:"pointer",flexShrink:0,marginTop:2};
+
+function Field({label,type,value,onChange,required}) {
+  return <div style={{marginBottom:16}}>
+    <label style={lbl}>{label}{required&&<span style={{color:"#ef4444"}}> *</span>}</label>
+    <input type={type||"text"} value={value} onChange={e=>onChange(e.target.value)} style={inp}/>
+  </div>;
+}
+function ScrollBox({text}) {
+  return <div style={{background:"#f0faf5",border:"1px solid #d4e8e0",borderRadius:12,padding:16,maxHeight:180,overflowY:"auto",fontSize:13,lineHeight:1.7,color:"#4a6b5d",whiteSpace:"pre-wrap",marginBottom:12}}>{text}</div>;
+}
+function Stepper({step,total,labels}) {
+  return <div style={{marginBottom:24}}>
+    <div style={{display:"flex",gap:4,justifyContent:"center",marginBottom:8}}>
+      {Array.from({length:total},(_,i)=>(
+        <div key={i} style={{width:i===step?32:10,height:6,borderRadius:3,background:i<=step?"linear-gradient(90deg,#0891b2,#1565a8)":"#d4e8e0",transition:"all .4s"}}/>
+      ))}
+    </div>
+    {labels&&labels[step]&&<div style={{textAlign:"center",fontSize:11,color:"#7a9e8e",letterSpacing:1,textTransform:"uppercase"}}>{labels[step]}</div>}
+  </div>;
+}
+function Nav({onBack,onNext,label,ok=true}) {
+  return <div style={{display:"flex",justifyContent:onBack?"space-between":"flex-end",marginTop:20}}>
+    {onBack&&<button onClick={onBack} style={btnB}>← Indietro</button>}
+    <button onClick={onNext} style={ok?btnP:btnD} disabled={!ok}>{label||"Avanti →"}</button>
+  </div>;
+}
+
+// ═══ STEP 0: ANAGRAFICA ═══
+function StepAnagrafica({data,setData,onNext}) {
+  const [tried,setTried] = useState(false);
+  const miss = [];
+  if(!data.nome) miss.push("Nome");
+  if(!data.cognome) miss.push("Cognome");
+  if(!data.dataNascita) miss.push("Data di Nascita");
+  if(!data.cellulare) miss.push("Cellulare");
+  if(!data.email) miss.push("Email");
+  const ok = miss.length===0;
+  const isMinor = () => {
+    if(!data.dataNascita) return false;
+    const b=new Date(data.dataNascita),t=new Date();
+    let a=t.getFullYear()-b.getFullYear();
+    const m=t.getMonth()-b.getMonth();
+    if(m<0||(m===0&&t.getDate()<b.getDate()))a--;
+    return a<18;
+  };
+  const handle = () => { if(!ok||isMinor()){setTried(true);return;} onNext(); };
+  const fields = [
+    {key:"nome",label:"Nome",required:true},{key:"cognome",label:"Cognome",required:true},
+    {key:"dataNascita",label:"Data di Nascita",type:"date",required:true},{key:"indirizzo",label:"Indirizzo"},
+    {key:"citta",label:"Città / CAP"},{key:"paese",label:"Paese / Nazione"},
+    {key:"cellulare",label:"Cellulare",type:"tel",required:true},{key:"email",label:"Email",type:"email",required:true},
+  ];
+  return <div>
+    <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:400,color:"#1e293b",marginBottom:8}}>Dati Anagrafici</h2>
+    <p style={{color:"#4a6b5d",fontSize:14,marginBottom:24,lineHeight:1.6}}>Inserisci i tuoi dati per creare il profilo YUMU. I campi con * sono obbligatori.</p>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px"}}>
+      {fields.map(f=>(
+        <div key={f.key} style={f.key==="indirizzo"?{gridColumn:"1/3"}:{}}>
+          <Field label={f.label} type={f.type} required={f.required} value={data[f.key]||""} onChange={v=>setData({...data,[f.key]:v})}/>
+        </div>
+      ))}
+    </div>
+    {isMinor()&&<div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:10,padding:14,fontSize:13,color:"#991b1b",marginBottom:14}}>Devi avere almeno 18 anni per registrarti.</div>}
+    {tried&&!ok&&<div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:14,fontSize:13,color:"#92400e",marginBottom:14}}>Campi obbligatori mancanti: {miss.join(", ")}</div>}
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
+      <a href="index.html" style={{color:"#0891b2",fontSize:13,textDecoration:"none"}}>← Torna al sito</a>
+      <button style={btnP} onClick={handle}>Avanti →</button>
+    </div>
+  </div>;
+}
+
+// ═══ STEP 1: CONSENSI ═══
+function StepConsensi({consents,setConsents,onNext,onBack}) {
+  const ok = consents.privacy && consents.trattamento;
+  return <div>
+    <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:400,color:"#1e293b",marginBottom:8}}>Privacy e Consensi</h2>
+    <p style={{color:"#4a6b5d",fontSize:14,marginBottom:20,lineHeight:1.6}}>Leggi l'informativa e fornisci il tuo consenso per procedere.</p>
+    <h4 style={{fontSize:14,fontWeight:600,color:"#1e293b",marginBottom:8}}>Informativa sulla Privacy</h4>
+    <ScrollBox text={PRIVACY_TEXT}/>
+    {[
+      {key:"privacy",   text:"Dichiaro di aver letto e compreso l'Informativa sulla Privacy.",req:true},
+      {key:"trattamento",text:"Acconsento al trattamento dei miei dati per i servizi YUMU.",req:true},
+      {key:"marketing", text:"Acconsento a ricevere comunicazioni informative e promozionali. (Facoltativo)",req:false},
+    ].map(c=>(
+      <label key={c.key} style={{display:"flex",gap:10,alignItems:"flex-start",cursor:"pointer",marginBottom:14,fontSize:14,color:"#1e293b"}}>
+        <input type="checkbox" checked={consents[c.key]||false} onChange={e=>setConsents({...consents,[c.key]:e.target.checked})} style={chk}/>
+        <span>{c.text}{c.req&&<span style={{color:"#ef4444"}}> *</span>}</span>
+      </label>
+    ))}
+    <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:12,fontSize:12,color:"#92400e",marginBottom:16,lineHeight:1.6}}>
+      Puoi revocare il consenso in qualsiasi momento. Hai diritto alla cancellazione completa dei tuoi dati (diritto all'oblio). Scrivi a: privacy@yumu.ch
+    </div>
+    <Nav onBack={onBack} onNext={onNext} ok={ok}/>
+  </div>;
+}
+
+// ═══ STEP 2: DISCLAIMER ═══
+function StepDisclaimer({accepted,setAccepted,onNext,onBack}) {
+  return <div>
+    <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:400,color:"#1e293b",marginBottom:8}}>Consenso Informato</h2>
+    <p style={{color:"#4a6b5d",fontSize:14,marginBottom:20,lineHeight:1.6}}>Esonero di responsabilità — leggi attentamente prima di proseguire.</p>
+    <div style={{background:"#f0faf5",border:"2px solid #d4e8e0",borderRadius:16,padding:28,marginBottom:20}}>
+      <div style={{fontSize:40,marginBottom:12}}>⚕️</div>
+      <p style={{fontSize:15,lineHeight:1.8,color:"#1e293b",fontStyle:"italic"}}>{DISCLAIMER_TEXT}</p>
+    </div>
+    <label style={{display:"flex",gap:10,alignItems:"flex-start",cursor:"pointer",marginBottom:20,fontSize:14,color:"#1e293b",fontWeight:500}}>
+      <input type="checkbox" checked={accepted} onChange={e=>setAccepted(e.target.checked)} style={chk}/>
+      <span>Ho letto e compreso il disclaimer. Accetto e proseguo. <span style={{color:"#ef4444"}}>*</span></span>
+    </label>
+    <Nav onBack={onBack} onNext={onNext} ok={accepted}/>
+  </div>;
+}
+
+// ═══ STEP 3: PERCORSO ═══
+function StepPercorso({onSelect,onBack}) {
+  const [hover,setHover] = useState(null);
+  return <div>
+    <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:400,color:"#1e293b",marginBottom:8}}>Scegli il tuo Percorso</h2>
+    <p style={{color:"#4a6b5d",fontSize:14,marginBottom:24,lineHeight:1.6}}>Quattro approcci al benessere bioenergetico. Potrai sempre cambiare percorso.</p>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:24}}>
+      {PERCORSI.map(p=>(
+        <div key={p.id} onMouseEnter={()=>setHover(p.id)} onMouseLeave={()=>setHover(null)} onClick={()=>onSelect(p.id)}
+          style={{background:p.bg,border:"2px solid "+(hover===p.id?p.color:p.border),borderRadius:18,padding:24,cursor:"pointer",transform:hover===p.id?"translateY(-4px)":"none",transition:"all .3s",boxShadow:hover===p.id?"0 12px 32px "+p.color+"25":"none"}}>
+          <div style={{fontSize:36,marginBottom:10}}>{p.icon}</div>
+          <h3 style={{fontSize:17,fontWeight:600,color:p.color,marginBottom:8}}>{p.title}</h3>
+          <p style={{fontSize:12,color:"#4a6b5d",lineHeight:1.6}}>{p.desc}</p>
+        </div>
+      ))}
+    </div>
+    <button onClick={onBack} style={btnB}>← Indietro</button>
+  </div>;
+}
+
+// ═══ STEP 4: PIANO ═══
+function StepPiano({percorso,piano,setPiano,valuta,setValuta,onNext,onBack,prezzi}) {
+  const [hover,setHover] = useState(null);
+  const p = PERCORSI.find(x=>x.id===percorso);
+
+  const getPrezzo = (id) => {
+    if(!prezzi) return "—";
+    const v = valuta==="EUR" ? prezzi[id+"_eur"] : prezzi[id+"_chf"];
+    return v ? (valuta==="CHF"?"CHF ":"€")+v : "—";
+  };
+
+  return <div>
+    <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:400,color:"#1e293b",marginBottom:8}}>Scegli il tuo Piano</h2>
+    <p style={{color:"#4a6b5d",fontSize:14,marginBottom:6,lineHeight:1.6}}>
+      Percorso: <strong style={{color:p?.color}}>{p?.icon} {p?.title}</strong>
+    </p>
+    <p style={{color:"#7a9e8e",fontSize:12,marginBottom:22}}>Gli abbonamenti includono max 3 trattamenti al giorno — se cambi la scelta giornaliera i precedenti si annullano automaticamente.</p>
+
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:20}}>
+      {DEFAULT_PIANI.map(pl=>(
+        <div key={pl.id} onMouseEnter={()=>setHover(pl.id)} onMouseLeave={()=>setHover(null)} onClick={()=>setPiano(pl.id)}
+          style={{background:piano===pl.id?"#f0faf5":"transparent",border:"2px solid "+(piano===pl.id?"#0891b2":"#d4e8e0"),borderRadius:16,padding:20,cursor:"pointer",position:"relative",transform:hover===pl.id&&piano!==pl.id?"translateY(-2px)":"none",transition:"all .25s"}}>
+          {pl.badge&&<div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:"#0891b2",color:"#fff",fontSize:10,fontWeight:600,padding:"3px 10px",borderRadius:10,whiteSpace:"nowrap"}}>{pl.badge}</div>}
+          <div style={{fontSize:13,fontWeight:600,color:"#1e293b",marginBottom:4}}>{pl.label}</div>
+          <div style={{fontSize:22,fontWeight:700,color:piano===pl.id?"#0891b2":"#1e293b",marginBottom:4}}>{getPrezzo(pl.id)}</div>
+          <div style={{fontSize:11,color:"#7a9e8e",lineHeight:1.5}}>{pl.desc}</div>
+          {pl.id!=="singolo"&&<div style={{fontSize:11,color:"#7a9e8e",marginTop:4}}>{pl.giorni} giorni solari</div>}
+          {piano===pl.id&&<div style={{marginTop:8,fontSize:16,color:"#0891b2"}}>✓ Selezionato</div>}
+        </div>
+      ))}
+    </div>
+
+    <div style={{background:"#f0f9ff",border:"1px solid #bae6fd",borderRadius:10,padding:12,fontSize:12,color:"#0369a1",marginBottom:18,lineHeight:1.7}}>
+      <strong>ℹ️ Come funziona:</strong> Dopo il pagamento hai accesso ai trattamenti per il periodo del tuo piano. 
+      {piano==="singolo" ? " Il trattamento singolo è al prezzo di listino senza sconti. Accesso per 30 giorni." : " Puoi ascoltare fino a 3 trattamenti al giorno — cambiando la selezione giornaliera quella precedente si annulla automaticamente. Al termine del periodo l'accesso si disattiva fino al rinnovo."}
+    </div>
+
+    <div style={{marginBottom:18}}>
+      <label style={{...lbl,marginBottom:8}}>Valuta di pagamento</label>
+      <div style={{display:"flex",gap:10}}>
+        {["CHF","EUR"].map(v=>(
+          <button key={v} onClick={()=>setValuta(v)} style={{padding:"8px 22px",borderRadius:8,border:"1px solid "+(valuta===v?"#0891b2":"#d4e8e0"),background:valuta===v?"#0891b2":"transparent",color:valuta===v?"#fff":"#1e293b",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:500}}>{v}</button>
+        ))}
+      </div>
+    </div>
+
+    <Nav onBack={onBack} onNext={onNext} label="Procedi al Pagamento →"/>
+  </div>;
+}
+
+// ═══ STEP 5: PAGAMENTO ═══
+function StepPagamento({data,piano,valuta,percorso,onSuccess,onBack,prezzi}) {
+  const [card,setCard] = useState({numero:"",scadenza:"",cvv:"",nome:""});
+  const [processing,setProcessing] = useState(false);
+  const pl = DEFAULT_PIANI.find(x=>x.id===piano);
+  const rawPrezzo = prezzi ? (valuta==="EUR"?prezzi[piano+"_eur"]:prezzi[piano+"_chf"]) : 0;
+  const prezzo = parseFloat(rawPrezzo)||0;
+
+  const fmt4 = v=>v.replace(/\D/g,"").slice(0,16).replace(/(.{4})/g,"$1 ").trim();
+  const fmtExp = v=>{const n=v.replace(/\D/g,"").slice(0,4);return n.length>2?n.slice(0,2)+"/"+n.slice(2):n;};
+  const canPay = card.numero.replace(/\s/g,"").length>=15&&card.scadenza.length>=4&&card.cvv.length>=3&&card.nome.length>2&&prezzo>0;
+
+  const handlePay = async () => {
+    if(!canPay) return;
+    setProcessing(true);
+    setTimeout(async ()=>{
+      const txId = "pi_"+Math.random().toString(36).substr(2,24).toUpperCase();
+      const now = new Date();
+      const expiry = new Date(now);
+      expiry.setDate(expiry.getDate()+pl.giorni);
+      let numFatt = "YUMU-"+now.getFullYear()+"-0001";
+      try {
+        const ref = window.db.collection('contatori').doc('fatture');
+        await window.db.runTransaction(async t=>{
+          const doc = await t.get(ref);
+          const n = doc.exists?(doc.data().ultimo||0)+1:1;
+          t.set(ref,{ultimo:n});
+          numFatt = "YUMU-"+now.getFullYear()+"-"+String(n).padStart(4,"0");
+        });
+      } catch(e){}
+      try {
+        await window.db.collection('clienti').add({
+          ...data, percorso, piano, valuta, prezzo,
+          transactionId:txId, numFattura:numFatt,
+          dataAcquisto:now.toISOString(), scadenza:expiry.toISOString(),
+          attivo:true, createdAt:firebase.firestore.FieldValue.serverTimestamp()
+        });
+      } catch(e){}
+      setProcessing(false);
+      onSuccess({transactionId:txId,numFattura:numFatt,dataAcquisto:now,scadenza:expiry,prezzo});
+    },2500);
+  };
+
+  const si = {...inp,background:"#fff",border:"1px solid #e0e0e0",borderRadius:6,padding:"10px 12px"};
+
+  return <div>
+    <div style={{background:"linear-gradient(135deg,#635bff,#0a2540)",borderRadius:16,padding:24,marginBottom:20,color:"#fff"}}>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
+        <span style={{fontSize:13,opacity:0.8}}>Pagamento sicuro</span>
+        <span style={{fontSize:11,opacity:0.7}}>🔒 SSL 256-bit</span>
+      </div>
+      <div style={{fontSize:28,fontWeight:700}}>{valuta==="CHF"?"CHF":"€"} {prezzo>0?prezzo.toFixed(2):"—"}</div>
+      <div style={{fontSize:13,opacity:0.8,marginTop:4}}>Abbonamento {pl.label} · {pl.giorni} giorni</div>
+    </div>
+
+    <div style={{background:"#fff",borderRadius:12,padding:24,border:"1px solid #e5e7eb",marginBottom:16}}>
+      <div style={{display:"flex",gap:8,marginBottom:16}}>
+        <svg width="32" height="20" viewBox="0 0 32 20" fill="none"><rect width="32" height="20" rx="3" fill="#1a1f71"/><circle cx="12" cy="10" r="6" fill="#eb001b" opacity="0.8"/><circle cx="20" cy="10" r="6" fill="#f79e1b" opacity="0.8"/></svg>
+        <svg width="32" height="20" viewBox="0 0 32 20" fill="none"><rect width="32" height="20" rx="3" fill="#1a1f71"/><text x="4" y="14" fill="white" fontSize="9" fontWeight="bold">VISA</text></svg>
+      </div>
+      <div style={{marginBottom:12}}>
+        <label style={{fontSize:12,fontWeight:500,color:"#374151",marginBottom:4,display:"block"}}>Numero carta</label>
+        <input style={si} placeholder="4242 4242 4242 4242" value={card.numero} onChange={e=>setCard({...card,numero:fmt4(e.target.value)})}/>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+        <div>
+          <label style={{fontSize:12,fontWeight:500,color:"#374151",marginBottom:4,display:"block"}}>Scadenza</label>
+          <input style={si} placeholder="MM/AA" value={card.scadenza} onChange={e=>setCard({...card,scadenza:fmtExp(e.target.value)})}/>
+        </div>
+        <div>
+          <label style={{fontSize:12,fontWeight:500,color:"#374151",marginBottom:4,display:"block"}}>CVV</label>
+          <input style={si} placeholder="123" type="password" value={card.cvv} onChange={e=>setCard({...card,cvv:e.target.value.replace(/\D/g,"").slice(0,4)})}/>
+        </div>
+      </div>
+      <div>
+        <label style={{fontSize:12,fontWeight:500,color:"#374151",marginBottom:4,display:"block"}}>Nome sulla carta</label>
+        <input style={si} placeholder="MARIO ROSSI" value={card.nome} onChange={e=>setCard({...card,nome:e.target.value.toUpperCase()})}/>
+      </div>
+    </div>
+
+    <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:12,fontSize:12,color:"#166534",marginBottom:16,lineHeight:1.6,display:"flex",gap:8}}>
+      <span style={{fontSize:16}}>🔒</span>
+      <span>I dati della carta sono gestiti da <strong>Stripe</strong> (PCI-DSS). YUMU non memorizza mai i dati della carta.</span>
+    </div>
+
+    <div style={{display:"flex",justifyContent:"space-between"}}>
+      <button onClick={onBack} style={btnB}>← Indietro</button>
+      <button onClick={handlePay} disabled={!canPay||processing}
+        style={{...btnP,background:processing?"#9ca3af":"linear-gradient(135deg,#635bff,#0a2540)",opacity:canPay&&!processing?1:0.5,cursor:canPay&&!processing?"pointer":"not-allowed"}}>
+        {processing?"⏳ Elaborazione...":prezzo>0?"Paga "+(valuta==="CHF"?"CHF":"€")+" "+prezzo.toFixed(2):"Prezzo non disponibile"}
+      </button>
+    </div>
+    <div style={{textAlign:"center",marginTop:10,fontSize:11,color:"#7a9e8e"}}>🔄 Demo — In produzione collegato a Stripe reale</div>
+  </div>;
+}
+
+// ═══ STEP 6: FATTURA ═══
+function StepFattura({data,piano,valuta,percorso,payment,onReset}) {
+  const pl = DEFAULT_PIANI.find(x=>x.id===piano);
+  const p = PERCORSI.find(x=>x.id===percorso);
+  const isExport = (data.paese||"").toLowerCase()!=="svizzera"&&(data.paese||"").toLowerCase()!=="ch"&&(data.paese||"")!=="";
+  const prezzo = payment.prezzo;
+  const dataFatt = new Date().toLocaleDateString("it-CH");
+  const scadenzaStr = payment.scadenza?new Date(payment.scadenza).toLocaleDateString("it-CH"):"";
+  const curr = valuta==="CHF"?"CHF":"€";
+
+  return <div>
+    <div style={{background:"linear-gradient(135deg,#059669,#0d9488)",borderRadius:16,padding:24,marginBottom:20,color:"#fff",textAlign:"center"}}>
+      <div style={{fontSize:48,marginBottom:8}}>✅</div>
+      <div style={{fontSize:22,fontWeight:600,marginBottom:4}}>Pagamento completato!</div>
+      <div style={{fontSize:13,opacity:0.9}}>Transazione: {payment.transactionId}</div>
+      <div style={{fontSize:12,opacity:0.8,marginTop:6}}>Accesso attivo fino al: <strong>{scadenzaStr}</strong></div>
+    </div>
+
+    <div id="fattura" style={{background:"white",borderRadius:16,padding:"32px 36px",boxShadow:"0 4px 24px rgba(0,0,0,0.08)",marginBottom:20}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:28}}>
+        <div>
+          <div style={{fontSize:22,fontWeight:700,letterSpacing:3,background:"linear-gradient(135deg,#0891b2,#1565a8)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>YUMU</div>
+          <div style={{fontSize:10,color:"#7a9e8e",letterSpacing:1,marginTop:2}}>TRATTAMENTI BIOENERGETICI</div>
+        </div>
+        <div style={{textAlign:"right"}}>
+          <div style={{fontSize:18,fontWeight:600}}>FATTURA</div>
+          <div style={{fontSize:12,color:"#4a6b5d",marginTop:4}}>N° {payment.numFattura}</div>
+          <div style={{fontSize:12,color:"#4a6b5d"}}>Data: {dataFatt}</div>
+        </div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:28,marginBottom:24}}>
+        <div>
+          <div style={{fontSize:10,fontWeight:600,letterSpacing:2,color:"#0891b2",textTransform:"uppercase",marginBottom:6}}>Da</div>
+          <div style={{fontSize:12,lineHeight:1.9}}><strong>{AZIENDA.nome}</strong><br/>{AZIENDA.indirizzo}<br/>{AZIENDA.citta}<br/>{AZIENDA.paese}<br/><span style={{color:"#4a6b5d"}}>UID: {AZIENDA.uid}</span></div>
+        </div>
+        <div>
+          <div style={{fontSize:10,fontWeight:600,letterSpacing:2,color:"#0891b2",textTransform:"uppercase",marginBottom:6}}>A</div>
+          <div style={{fontSize:12,lineHeight:1.9}}><strong>{data.nome} {data.cognome}</strong><br/>{data.indirizzo||""}<br/>{data.citta||""}<br/>{data.paese||"Svizzera"}<br/><span style={{color:"#4a6b5d"}}>{data.email}</span></div>
+        </div>
+      </div>
+      <div style={{background:"#f8fafb",borderRadius:10,padding:"12px 16px",marginBottom:16}}>
+        <div style={{display:"flex",justifyContent:"space-between",fontWeight:600,fontSize:11,letterSpacing:1,color:"#0891b2",textTransform:"uppercase",borderBottom:"1px solid #d4e8e0",paddingBottom:8,marginBottom:8}}>
+          <span style={{flex:3}}>Descrizione</span><span style={{flex:1,textAlign:"right"}}>Importo</span>
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",fontSize:13,padding:"8px 0"}}>
+          <span style={{flex:3}}>
+            Abbonamento {pl.label} Trattamenti Bioenergetici YUMU<br/>
+            <span style={{fontSize:11,color:"#4a6b5d"}}>Percorso: {p?.icon} {p?.title}</span><br/>
+            <span style={{fontSize:11,color:"#4a6b5d"}}>Periodo: {dataFatt} → {scadenzaStr} ({pl.giorni} giorni solari)</span><br/>
+            {piano!=="singolo"&&<span style={{fontSize:11,color:"#4a6b5d"}}>Max 3 trattamenti/giorno · cambio giornaliero annulla selezione precedente</span>}
+          </span>
+          <span style={{flex:1,textAlign:"right",fontWeight:500}}>{curr} {prezzo.toFixed(2)}</span>
+        </div>
+      </div>
+      <div style={{maxWidth:260,marginLeft:"auto",marginBottom:18,fontSize:13}}>
+        <div style={{display:"flex",justifyContent:"space-between",padding:"5px 0"}}><span style={{color:"#4a6b5d"}}>Subtotale</span><span>{curr} {prezzo.toFixed(2)}</span></div>
+        <div style={{display:"flex",justifyContent:"space-between",padding:"5px 0"}}><span style={{color:"#4a6b5d"}}>{isExport?"IVA":"MWST/IVA"}</span><span>{isExport?"esente":"non assoggettato"}</span></div>
+        <div style={{borderTop:"1px solid #d4e8e0",margin:"4px 0"}}/>
+        <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",fontWeight:700,fontSize:16}}><span>Totale</span><span style={{color:"#0891b2"}}>{curr} {prezzo.toFixed(2)}</span></div>
+      </div>
+      <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:10,fontSize:10,color:"#92400e",marginBottom:12,lineHeight:1.6}}>
+        {isExport?"Esportazione di servizi — IVA esente (LIVA art. 8 cpv. 1).":"Prestazione non soggetta a MWST/IVA — Fatturato annuo inferiore a CHF 100'000 (art. 10 cpv. 2 lett. a LIVA)."}
+      </div>
+      <div style={{background:"#f8fafb",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:12,lineHeight:1.9}}>
+        <div style={{fontSize:10,fontWeight:600,letterSpacing:2,color:"#0891b2",textTransform:"uppercase",marginBottom:4}}>Pagamento</div>
+        Metodo: Carta di credito via Stripe · ID: {payment.transactionId} · Stato: ✅ Confermato
+      </div>
+      <div style={{textAlign:"center",fontSize:10,color:"#7a9e8e",lineHeight:1.8,paddingTop:10,borderTop:"1px solid #d4e8e0"}}>
+        {AZIENDA.nome} — {AZIENDA.indirizzo}, {AZIENDA.citta} — UID: {AZIENDA.uid} — {AZIENDA.email}
+      </div>
+    </div>
+
+    <div className="no-print" style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap",marginBottom:16}}>
+      <button onClick={()=>window.print()} style={{...btnP,padding:"12px 24px",fontSize:14}}>📄 Scarica Fattura PDF</button>
+      <a href="index.html" style={{...btnB,padding:"12px 24px",fontSize:14,textDecoration:"none",display:"inline-flex",alignItems:"center"}}>🌐 Torna al Sito</a>
+      <button onClick={onReset} style={{...btnB,padding:"12px 24px",fontSize:14}}>Nuovo Acquisto</button>
+    </div>
+    <div className="no-print" style={{background:"#ecfdf5",border:"1px solid #a7f3d0",borderRadius:12,padding:16,fontSize:13,color:"#065f46",lineHeight:1.7,textAlign:"center",maxWidth:500,margin:"0 auto"}}>
+      ✅ Dati e fattura registrati nel sistema YUMU.<br/>
+      Conferma inviata a <strong>{data.email}</strong>.<br/>
+      Puoi richiedere la cancellazione dati in qualsiasi momento.
+    </div>
+  </div>;
+}
+
+// ═══ APP ═══
+function App() {
+  const [step,setStep] = useState(0);
+  const [data,setData] = useState({});
+  const [consents,setConsents] = useState({privacy:false,trattamento:false,marketing:false});
+  const [disclaimer,setDisclaimer] = useState(false);
+  const [percorso,setPercorso] = useState(null);
+  const [piano,setPiano] = useState("mensile");
+  const [valuta,setValuta] = useState("CHF");
+  const [payment,setPayment] = useState(null);
+  const [prezzi,setPrezzi] = useState(null);
+
+  // Carica prezzi da Firebase
+  useEffect(()=>{
+    window.db.collection('site').doc('piani').get().then(doc=>{
+      if(doc.exists) setPrezzi(doc.data());
+      else setPrezzi({mensile_chf:49,mensile_eur:46,trimestrale_chf:129,trimestrale_eur:121,annuale_chf:468,annuale_eur:438,singolo_chf:0,singolo_eur:0});
+    }).catch(()=>setPrezzi({mensile_chf:49,mensile_eur:46,trimestrale_chf:129,trimestrale_eur:121,annuale_chf:468,annuale_eur:438,singolo_chf:0,singolo_eur:0}));
+  },[]);
+
+  const labels=["Dati Anagrafici","Privacy","Disclaimer","Percorso","Piano","Pagamento","Fattura"];
+  const reset=()=>{setStep(0);setData({});setConsents({privacy:false,trattamento:false,marketing:false});setDisclaimer(false);setPercorso(null);setPiano("mensile");setValuta("CHF");setPayment(null);};
+
+  if(!prezzi) return <div style={{minHeight:"100vh",background:"#e8f5f0",display:"flex",alignItems:"center",justifyContent:"center"}}>
+    <div style={{textAlign:"center",color:"#4a6b5d"}}>
+      <div style={{fontSize:32,marginBottom:12}}>🌿</div>
+      <div>Caricamento...</div>
+    </div>
+  </div>;
+
+  return (
+    <div style={{minHeight:"100vh",background:"#e8f5f0",display:"flex",alignItems:"center",justifyContent:"center",padding:"20px 16px"}}>
+      <div style={{width:"100%",maxWidth:700,background:"#f5fdf9",borderRadius:24,padding:"36px 40px",boxShadow:"0 8px 40px rgba(0,0,0,0.06)",border:"1px solid #d4e8e0"}}>
+        <div style={{textAlign:"center",marginBottom:10}}>
+          <a href="index.html" style={{textDecoration:"none"}}>
+            <span style={{fontSize:26,fontWeight:700,letterSpacing:3,background:"linear-gradient(135deg,#0891b2,#1565a8)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>YUMU</span>
+          </a>
+          <div style={{fontSize:11,color:"#7a9e8e",letterSpacing:1,marginTop:3}}>TRATTAMENTI BIOENERGETICI</div>
+        </div>
+        {step<6&&<Stepper step={step} total={7} labels={labels}/>}
+        {step===0&&<StepAnagrafica data={data} setData={setData} onNext={()=>setStep(1)}/>}
+        {step===1&&<StepConsensi consents={consents} setConsents={setConsents} onNext={()=>setStep(2)} onBack={()=>setStep(0)}/>}
+        {step===2&&<StepDisclaimer accepted={disclaimer} setAccepted={setDisclaimer} onNext={()=>setStep(3)} onBack={()=>setStep(1)}/>}
+        {step===3&&<StepPercorso onSelect={p=>{setPercorso(p);setStep(4)}} onBack={()=>setStep(2)}/>}
+        {step===4&&<StepPiano percorso={percorso} piano={piano} setPiano={setPiano} valuta={valuta} setValuta={setValuta} onNext={()=>setStep(5)} onBack={()=>setStep(3)} prezzi={prezzi}/>}
+        {step===5&&<StepPagamento data={data} piano={piano} valuta={valuta} percorso={percorso} onSuccess={p=>{setPayment(p);setStep(6)}} onBack={()=>setStep(4)} prezzi={prezzi}/>}
+        {step===6&&<StepFattura data={data} piano={piano} valuta={valuta} percorso={percorso} payment={payment} onReset={reset}/>}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
