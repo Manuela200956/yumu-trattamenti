@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YUMU — Trattamenti Bioenergetici</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+:root{--deep:#0d2b4e;--blue:#1565a8;--teal:#0891b2;--cyan:#22d3ee;--cream:#e8f5f0;--warm:#dff0ea;--sand:#d4e8e0;--text:#1e293b;--muted:#4a6b5d;--light:#7a9e8e;--white:#f0faf5;}
+*{margin:0;padding:0;box-sizing:border-box;}html{scroll-behavior:smooth;}body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--cream);overflow-x:hidden;}
+nav{position:fixed;top:0;width:100%;z-index:100;padding:14px 40px;display:flex;justify-content:space-between;align-items:center;background:rgba(232,245,240,0.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,0.05);transition:all .3s;}
+nav.scrolled{padding:10px 40px;box-shadow:0 2px 20px rgba(0,0,0,0.04);}
+.logo{font-size:24px;font-weight:700;letter-spacing:3px;background:linear-gradient(135deg,var(--teal),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;cursor:pointer;}
+.nav-links{display:flex;gap:28px;list-style:none;}.nav-links a{color:var(--muted);text-decoration:none;font-size:13px;font-weight:400;letter-spacing:.5px;transition:color .3s;cursor:pointer;}.nav-links a:hover,.nav-links a.active{color:var(--teal);font-weight:600;}
+.nav-cta{background:linear-gradient(135deg,var(--teal),var(--blue));color:white;padding:10px 24px;border-radius:50px;font-size:13px;font-weight:500;letter-spacing:.5px;transition:all .3s;cursor:pointer;border:none;font-family:'Outfit',sans-serif;}.nav-cta:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(8,145,178,.3);}
+.page{display:none;min-height:100vh;padding-top:70px;}.page.active{display:block;}
+.hero{min-height:calc(100vh - 70px);display:flex;align-items:center;justify-content:center;text-align:center;padding:60px 40px;background:linear-gradient(180deg,var(--white),var(--cream));position:relative;overflow:hidden;}.hero::before{content:'';position:absolute;top:-200px;right:-200px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(8,145,178,.06),transparent 70%);}.hero-content{position:relative;z-index:1;max-width:700px;}
+.hero-badge{display:inline-block;padding:8px 20px;border-radius:50px;background:rgba(8,145,178,.08);color:var(--teal);font-size:12px;font-weight:500;letter-spacing:2px;text-transform:uppercase;margin-bottom:24px;}
+.hero h1{font-family:'Playfair Display',serif;font-size:52px;font-weight:400;line-height:1.2;color:var(--deep);margin-bottom:20px;}.hero h1 em{font-style:italic;color:var(--teal);}.hero p{font-size:17px;color:var(--muted);line-height:1.7;margin-bottom:36px;font-weight:300;}
+.hero-buttons{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}.hero-btn{display:inline-block;background:linear-gradient(135deg,var(--teal),var(--blue));color:white;padding:16px 36px;border-radius:50px;font-size:14px;font-weight:500;transition:all .3s;cursor:pointer;border:none;font-family:'Outfit',sans-serif;}.hero-btn:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(8,145,178,.3);}.hero-btn-outline{display:inline-block;background:transparent;color:var(--teal);padding:16px 36px;border-radius:50px;font-size:14px;font-weight:500;transition:all .3s;cursor:pointer;border:1px solid var(--teal);font-family:'Outfit',sans-serif;}.hero-btn-outline:hover{background:rgba(8,145,178,.06);}
+section{padding:80px 40px;}.section-label{font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--teal);margin-bottom:12px;}.section-title{font-family:'Playfair Display',serif;font-size:36px;color:var(--deep);margin-bottom:16px;line-height:1.2;}.section-sub{font-size:15px;color:var(--muted);line-height:1.7;max-width:600px;font-weight:300;}
+.about{background:var(--white);}.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;max-width:1100px;margin:0 auto;align-items:center;}.about-visual{width:100%;height:400px;border-radius:20px;background:linear-gradient(135deg,rgba(8,145,178,.08),rgba(21,101,168,.06));display:flex;align-items:center;justify-content:center;font-size:120px;border:1px solid rgba(8,145,178,.1);}
+.services{background:var(--cream);}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:1100px;margin:40px auto 0;}.card{background:var(--white);border-radius:18px;padding:32px;border:1px solid var(--sand);transition:all .4s;cursor:pointer;}.card:hover{transform:translateY(-6px);box-shadow:0 20px 60px rgba(8,145,178,.08);border-color:rgba(8,145,178,.2);}.card-icon{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:20px;}.card h3{font-size:18px;font-weight:600;margin-bottom:10px;color:var(--deep);}.card p{font-size:13px;color:var(--muted);line-height:1.6;}.card-tag{display:inline-block;margin-top:16px;font-size:11px;font-weight:500;color:var(--teal);letter-spacing:1px;text-transform:uppercase;}
+.testimonials{background:var(--white);}.test-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:1100px;margin:40px auto 0;}.test-card{background:var(--cream);border-radius:18px;padding:28px;border:1px solid var(--sand);}.test-stars{color:#f59e0b;font-size:14px;margin-bottom:12px;letter-spacing:2px;}.test-text{font-size:14px;color:var(--muted);line-height:1.7;font-style:italic;margin-bottom:16px;}.test-author{font-size:13px;font-weight:600;color:var(--deep);}.test-role{font-size:11px;color:var(--light);}
+.contact{background:var(--cream);}.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;max-width:1000px;margin:40px auto 0;}.contact-info{display:flex;flex-direction:column;gap:24px;}.contact-item{display:flex;gap:16px;align-items:flex-start;}.contact-icon{width:48px;height:48px;border-radius:12px;background:rgba(8,145,178,.08);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}.contact-item h4{font-size:14px;font-weight:600;color:var(--deep);margin-bottom:2px;}.contact-item p{font-size:13px;color:var(--muted);}
+.form{display:flex;flex-direction:column;gap:14px;}.form input,.form textarea{width:100%;padding:14px 18px;border:1px solid var(--sand);border-radius:12px;background:var(--white);font-family:'Outfit',sans-serif;font-size:14px;outline:none;color:var(--text);transition:border .3s;}.form input:focus,.form textarea:focus{border-color:var(--teal);}.form textarea{height:120px;resize:none;}.form button{background:linear-gradient(135deg,var(--teal),var(--blue));color:white;border:none;padding:16px;border-radius:12px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all .3s;}.form button:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(8,145,178,.3);}
+.shop-header{text-align:center;padding:40px 20px 30px;}.shop-header h1{font-family:'Playfair Display',serif;font-size:40px;font-weight:400;color:var(--deep);}.shop-header h1 strong{font-weight:700;}.shop-header p{font-size:14px;color:var(--muted);margin-top:12px;max-width:500px;margin-left:auto;margin-right:auto;}
+.shop-search{max-width:400px;margin:0 auto 30px;display:flex;align-items:center;background:var(--white);border:1px solid var(--sand);border-radius:24px;padding:0 16px;height:44px;}.shop-search:focus-within{border-color:var(--teal);}.shop-search input{background:transparent;border:none;outline:none;color:var(--text);font-size:14px;width:100%;font-family:'Outfit',sans-serif;}.search-clear{background:none;border:none;color:var(--light);cursor:pointer;font-size:18px;display:none;}.search-dropdown{position:absolute;top:52px;left:0;right:0;background:var(--white);border:1px solid var(--sand);border-radius:16px;max-height:350px;overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,.08);z-index:50;display:none;}.search-dropdown.active{display:block;}.search-item{padding:14px 18px;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.03);display:flex;align-items:center;gap:12px;transition:background .2s;}.search-item:hover{background:var(--warm);}
+.sectors-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px;max-width:1100px;margin:0 auto;padding:0 20px;}.sector-card{background:var(--white);border:1px solid var(--sand);border-radius:18px;padding:28px;cursor:pointer;transition:all .35s;}.sector-card:hover{transform:translateY(-4px);box-shadow:0 16px 48px rgba(8,145,178,.08);border-color:rgba(8,145,178,.2);}.sector-card .s-icon{font-size:36px;margin-bottom:12px;}.sector-card .s-name{font-size:16px;font-weight:600;color:var(--deep);margin-bottom:6px;}.sector-card .s-desc{font-size:12px;color:var(--muted);line-height:1.5;}.sector-card .s-count{font-size:10px;color:var(--teal);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-top:14px;}
+.shop-back{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:50px;border:1px solid var(--sand);background:var(--white);color:var(--muted);font-size:13px;cursor:pointer;transition:all .2s;margin-bottom:20px;font-family:'Outfit',sans-serif;}.shop-back:hover{background:var(--warm);color:var(--teal);}
+.system-card{background:var(--white);border:1px solid var(--sand);border-radius:18px;padding:28px;cursor:pointer;transition:all .35s;}.system-card:hover{transform:translateY(-3px);border-color:rgba(8,145,178,.2);box-shadow:0 12px 36px rgba(8,145,178,.06);}
+.treatment-row{background:var(--white);border:1px solid var(--sand);border-radius:18px;padding:24px;cursor:pointer;transition:all .35s;display:flex;gap:20px;align-items:center;margin-bottom:14px;}.treatment-row:hover{transform:translateX(4px);border-color:rgba(8,145,178,.2);}
+.detail-section{background:var(--white);border-radius:18px;padding:28px;border:1px solid var(--sand);margin-bottom:18px;}.detail-section h3{margin:0 0 14px;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal);}
+.benefits-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}.benefit-item{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--warm);border-radius:12px;font-size:13px;}
+.specs-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}.spec-item{padding:12px 16px;background:var(--warm);border-radius:12px;}.spec-item .sp-label{font-size:10px;color:var(--light);letter-spacing:.5px;margin-bottom:4px;text-transform:uppercase;}.spec-item .sp-value{font-size:13px;font-weight:600;color:var(--deep);}
+.cart-btn{position:relative;width:42px;height:42px;border-radius:50%;border:1px solid var(--sand);background:var(--white);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .2s;}.cart-btn:hover{background:var(--warm);border-color:var(--teal);}.cart-badge{position:absolute;top:-4px;right:-4px;background:var(--teal);color:white;font-size:10px;font-weight:700;width:20px;height:20px;border-radius:50%;display:none;align-items:center;justify-content:center;}
+.cart-overlay{position:fixed;top:0;right:0;width:390px;height:100vh;background:var(--cream);border-left:1px solid var(--sand);z-index:300;display:none;flex-direction:column;box-shadow:-16px 0 48px rgba(0,0,0,.06);transform:translateX(100%);transition:transform .3s;}.cart-overlay.open{display:flex;transform:translateX(0);}
+.notification{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--teal);color:white;padding:12px 28px;border-radius:30px;font-size:14px;font-weight:600;z-index:9999;box-shadow:0 8px 28px rgba(8,145,178,.3);display:none;opacity:0;transition:opacity .3s;}.notification.show{display:block;opacity:1;}
+footer{background:var(--white);border-top:1px solid rgba(0,0,0,.05);padding:40px;text-align:center;}footer p{color:var(--light);font-size:13px;font-weight:300;}footer .f-logo{font-size:20px;font-weight:700;letter-spacing:3px;background:linear-gradient(135deg,var(--teal),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.fade-in{opacity:0;transform:translateY(30px);transition:opacity .8s,transform .8s;}.fade-in.visible{opacity:1;transform:translateY(0);}
+@media(max-width:768px){nav{padding:12px 16px;}.nav-links{display:none;}.hero h1{font-size:32px;}section{padding:60px 20px;}.about-grid{grid-template-columns:1fr;}.cards,.test-grid{grid-template-columns:1fr;}.contact-grid{grid-template-columns:1fr;gap:40px;}.sectors-grid{grid-template-columns:1fr 1fr;gap:12px;}.benefits-grid,.specs-grid{grid-template-columns:1fr;}.cart-overlay{width:100%;}.treatment-row{flex-direction:column;align-items:flex-start;}}
+</style>
+</head>
+<body>
+<div class="notification" id="notification"></div>
+<nav id="nav">
+  <div class="logo" onclick="goPage('home')">YUMU</div>
+  <ul class="nav-links">
+    <li><a onclick="goPage('home')" id="nav-home" class="active">Home</a></li>
+    <li><a onclick="goPage('home','about')">Chi Sono</a></li>
+    <li><a onclick="goPage('home','services')">Servizi</a></li>
+    <li><a onclick="goPage('shop')" id="nav-shop">Trattamenti</a></li>
+    <li><a onclick="goPage('home','testimonials')">Testimonianze</a></li>
+    <li><a onclick="goPage('home','contact')">Contatti</a></li>
+    <li><a href="admin.html" style="color:#e11d48;font-weight:600;">🔧 Admin</a></li>
+  </ul>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <button class="cart-btn" onclick="toggleCart()">🛒<span class="cart-badge" id="cartBadge">0</span></button>
+    <button class="nav-cta" onclick="window.location.href='registrazione.html'">Acquista</button>
+  </div>
+</nav>
+
+<div class="cart-overlay" id="cartOverlay">
+  <div style="padding:24px;border-bottom:1px solid var(--sand);display:flex;justify-content:space-between;align-items:center;"><div><div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--deep);">Carrello</div><div id="cartCount" style="font-size:11px;color:var(--muted);margin-top:2px;">0 trattamenti</div></div><button onclick="toggleCart()" style="background:none;border:none;color:var(--light);font-size:24px;cursor:pointer;">✕</button></div>
+  <div id="cartBody" style="flex:1;overflow-y:auto;padding:16px 24px;"></div>
+  <div id="cartFooter" style="display:none;padding:20px 24px;border-top:1px solid var(--sand);background:var(--white);"></div>
+</div>
+
+<!-- HOME PAGE -->
+<div class="page active" id="page-home">
+  <div class="hero">
+    <div class="hero-content">
+      <div class="hero-badge" id="ed-badge">Trattamenti Bioenergetici</div>
+      <h1 id="ed-hero-title">Riequilibra la tua <em>energia cellulare</em></h1>
+      <p id="ed-hero-text">Frequenze, campo morfogenetico e informazione biologica al servizio del tuo benessere. Per persone, animali e piante.</p>
+      <div class="hero-buttons">
+        <button class="hero-btn" onclick="window.location.href='registrazione.html'" id="ed-btn1">🛒 Esplora i Trattamenti</button>
+        <button class="hero-btn-outline" onclick="goPage('home','about')" id="ed-btn2">Chi Sono →</button>
+      </div>
+    </div>
+  </div>
+
+  <section class="about" id="about">
+    <div class="about-grid">
+      <div class="fade-in">
+        <div class="section-label">Chi Sono</div>
+        <div class="section-title" id="ed-cs-title">Un approccio unico al benessere</div>
+        <p class="section-sub" style="margin-bottom:20px" id="ed-cs-text1">Lavoro con il campo morfogenetico e informazionale delle cellule, utilizzando toni binaurali e decreti frequenziali per riequilibrare l'energia a livello profondo.</p>
+        <p class="section-sub" id="ed-cs-text2">I miei trattamenti si applicano a persone, animali e piante.</p>
+      </div>
+      <div class="about-visual fade-in" id="ed-cs-emoji">🌿</div>
+    </div>
+  </section>
+
+  <section class="services" id="services">
+    <div style="text-align:center;" class="fade-in">
+      <div class="section-label">Servizi</div>
+      <div class="section-title">Tre regni, un unico approccio</div>
+    </div>
+    <div class="cards" id="servicesCards">
+      <div class="card fade-in" onclick="goPage('shop')"><div class="card-icon" style="background:rgba(8,145,178,.08);">🧬</div><h3>Trattamenti per Persone</h3><p>Riequilibrio bioenergetico personalizzato attraverso frequenze mirate.</p><span class="card-tag">Esplora →</span></div>
+      <div class="card fade-in" onclick="goPage('shop')"><div class="card-icon" style="background:rgba(21,101,168,.08);">🐾</div><h3>Trattamenti per Animali</h3><p>Supporto all'equilibrio energetico degli animali.</p><span class="card-tag">Esplora →</span></div>
+      <div class="card fade-in" onclick="goPage('shop')"><div class="card-icon" style="background:rgba(34,211,238,.08);">🌾</div><h3>Trattamenti per Terreni</h3><p>Tecniche bioenergetiche per l'agricoltura.</p><span class="card-tag">Esplora →</span></div>
+    </div>
+  </section>
+
+  <section class="testimonials" id="testimonials">
+    <div style="text-align:center;" class="fade-in">
+      <div class="section-label">Testimonianze</div>
+      <div class="section-title">Esperienze reali</div>
+    </div>
+    <div class="test-grid" id="testiGrid">
+      <div class="test-card fade-in"><div class="test-stars">★★★★★</div><div class="test-text">"Dopo sole tre sessioni ho notato un cambiamento profondo."</div><div class="test-author">Maria R.</div><div class="test-role">Trattamento Persona</div></div>
+      <div class="test-card fade-in"><div class="test-stars">★★★★★</div><div class="test-text">"Il mio cane anziano ha ritrovato vitalità."</div><div class="test-author">Giovanni P.</div><div class="test-role">Trattamento Animale</div></div>
+      <div class="test-card fade-in"><div class="test-stars">★★★★★</div><div class="test-text">"Le piante sono più rigogliose e il raccolto è migliorato."</div><div class="test-author">Franco L.</div><div class="test-role">Trattamento Terreno</div></div>
+    </div>
+  </section>
+
+  <section class="contact" id="contact">
+    <div style="text-align:center;margin-bottom:20px;" class="fade-in">
+      <div class="section-label">Contatti</div>
+      <div class="section-title">Parliamone insieme</div>
+    </div>
+    <div class="contact-grid">
+      <div class="contact-info fade-in">
+        <div class="contact-item"><div class="contact-icon">📧</div><div><h4>Email</h4><p id="ed-email">info@yumu.ch</p></div></div>
+        <div class="contact-item"><div class="contact-icon">📱</div><div><h4>Telefono</h4><p id="ed-phone">+41 xx xxx xx xx</p></div></div>
+        <div class="contact-item"><div class="contact-icon">📍</div><div><h4>Sede</h4><p id="ed-address">Svizzera — Trattamenti a distanza</p></div></div>
+        <div class="contact-item"><div class="contact-icon">⏰</div><div><h4>Orari</h4><p id="ed-hours">Lun — Ven: 9:00 — 18:00</p></div></div>
+      </div>
+      <div class="form fade-in">
+        <input type="text" placeholder="Nome e Cognome">
+        <input type="email" placeholder="Email">
+        <input type="tel" placeholder="Telefono">
+        <textarea placeholder="Descrivi brevemente la tua situazione..."></textarea>
+        <button type="button">Invia Richiesta</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- SHOP PAGE -->
+<div class="page" id="page-shop">
+  <div style="max-width:1100px;margin:0 auto;padding:20px;">
+    <div class="shop-header">
+      <h1><strong>Trattamenti</strong> Quantistici</h1>
+      <p>Seleziona il macro settore del corpo per esplorare i programmi disponibili</p>
+    </div>
+    <div style="position:relative;max-width:400px;margin:0 auto 30px;">
+      <div class="shop-search">
+        <span style="font-size:16px;margin-right:10px;opacity:.4;">🔍</span>
+        <input type="text" id="searchInput" placeholder="Cerca trattamento..." oninput="doSearch()"/>
+        <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
+      </div>
+      <div class="search-dropdown" id="searchDropdown"></div>
+    </div>
+    <div id="shopContent"></div>
+  </div>
+</div>
+
+<footer>
+  <div class="f-logo">YUMU</div>
+  <p id="ed-disclaimer">I trattamenti quantistici non sostituiscono pareri medici o cure farmacologiche.<br>L'utente utilizza il servizio come supporto bioenergetico complementare.</p>
+  <p style="margin-top:12px">© 2026 YUMU — Tutti i diritti riservati.</p>
+</footer>
+
+<script>
+// ============================================
+// FIREBASE
+// ============================================
+const firebaseConfig = {
+  apiKey: "AIzaSyAIgVtY9Tya43c2_cb5-YZgeNPZ7GRyZ3A",
+  authDomain: "yumu-trattamenti.firebaseapp.com",
+  projectId: "yumu-trattamenti",
+  storageBucket: "yumu-trattamenti.firebasestorage.app",
+  messagingSenderId: "774486584577",
+  appId: "1:774486584577:web:3ad1278640ddf65a8b7f00"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ============================================
+// SECTORS
+// ============================================
+const SB=[
+  {id:"neurological",name:"Sistema Nervoso",icon:"🧠",color:"#0891b2",gradient:"linear-gradient(135deg,#0891b2,#22d3ee)",description:"Cervello, midollo spinale, nervi periferici",systems:[{id:"sn-c",name:"Sistema Nervoso Centrale",treatments:[]},{id:"sn-p",name:"Sistema Nervoso Periferico",treatments:[]},{id:"sn-a",name:"Sistema Nervoso Autonomo",treatments:[]}]},
+  {id:"cardiovascular",name:"Sistema Cardiovascolare",icon:"❤️",color:"#e11d48",gradient:"linear-gradient(135deg,#e11d48,#fb7185)",description:"Cuore, arterie, vene, circolazione",systems:[{id:"cv-h",name:"Cuore e Vasi",treatments:[]},{id:"cv-b",name:"Circolazione Sanguigna",treatments:[]}]},
+  {id:"musculoskeletal",name:"Apparato Muscolo-Scheletrico",icon:"🦴",color:"#059669",gradient:"linear-gradient(135deg,#059669,#34d399)",description:"Ossa, muscoli, articolazioni, tendini",systems:[{id:"ms-b",name:"Sistema Scheletrico",treatments:[]},{id:"ms-m",name:"Sistema Muscolare",treatments:[]},{id:"ms-j",name:"Articolazioni e Tendini",treatments:[]}]},
+  {id:"digestive",name:"Apparato Digerente",icon:"🫁",color:"#d97706",gradient:"linear-gradient(135deg,#d97706,#fbbf24)",description:"Stomaco, intestino, fegato, pancreas",systems:[{id:"di-g",name:"Tratto Gastrointestinale",treatments:[]},{id:"di-l",name:"Fegato e Pancreas",treatments:[]}]},
+  {id:"respiratory",name:"Apparato Respiratorio",icon:"💨",color:"#1565a8",gradient:"linear-gradient(135deg,#1565a8,#74b9ff)",description:"Polmoni, bronchi, vie aeree",systems:[{id:"re-l",name:"Polmoni e Bronchi",treatments:[]}]},
+  {id:"endocrine",name:"Sistema Endocrino",icon:"⚡",color:"#9333ea",gradient:"linear-gradient(135deg,#9333ea,#c084fc)",description:"Tiroide, surrenali, ipofisi, ormoni",systems:[{id:"en-t",name:"Tiroide e Metabolismo",treatments:[]},{id:"en-a",name:"Ghiandole Surrenali",treatments:[]},{id:"en-i",name:"Ipofisi e Ipotalamo",treatments:[]}]},
+  {id:"immune",name:"Sistema Immunitario",icon:"🛡️",color:"#0891b2",gradient:"linear-gradient(135deg,#0891b2,#67e8f9)",description:"Difese, linfociti, risposta immunitaria",systems:[{id:"im-d",name:"Difese Naturali",treatments:[]},{id:"im-a",name:"Risposta Autoimmune",treatments:[]}]},
+  {id:"urinary",name:"Apparato Urinario",icon:"💧",color:"#0284c7",gradient:"linear-gradient(135deg,#0284c7,#38bdf8)",description:"Reni, vescica, vie urinarie",systems:[{id:"ur-k",name:"Reni e Vie Urinarie",treatments:[]}]},
+  {id:"visual",name:"Sistema Visivo",icon:"👁️",color:"#6366f1",gradient:"linear-gradient(135deg,#6366f1,#a5b4fc)",description:"Occhi, retina, nervo ottico",systems:[{id:"vi-o",name:"Occhio e Strutture Oculari",treatments:[]},{id:"vi-n",name:"Nervo Ottico e Via Visiva",treatments:[]}]},
+  {id:"cutaneous",name:"Sistema Cutaneo",icon:"🫧",color:"#f472b6",gradient:"linear-gradient(135deg,#db2777,#f9a8d4)",description:"Pelle, derma, epidermide",systems:[{id:"cu-p",name:"Pelle e Derma",treatments:[]},{id:"cu-a",name:"Annessi Cutanei",treatments:[]}]},
+  {id:"lymphatic",name:"Sistema Linfatico",icon:"🫀",color:"#14b8a6",gradient:"linear-gradient(135deg,#14b8a6,#5eead4)",description:"Linfonodi, vasi linfatici, milza",systems:[{id:"ly-v",name:"Vasi Linfatici e Drenaggio",treatments:[]},{id:"ly-o",name:"Linfonodi e Organi Linfatici",treatments:[]}]},
+  {id:"reproductive",name:"Apparato Riproduttivo",icon:"🌸",color:"#e879a0",gradient:"linear-gradient(135deg,#be185d,#f9a8d4)",description:"Sistema riproduttivo femminile e maschile",systems:[{id:"rp-f",name:"Apparato Riproduttivo Femminile",treatments:[]},{id:"rp-m",name:"Apparato Riproduttivo Maschile",treatments:[]}]},
+  {id:"venous",name:"Sistema Venoso",icon:"🩸",color:"#7c3aed",gradient:"linear-gradient(135deg,#7c3aed,#c4b5fd)",description:"Vene, ritorno venoso, microcircolo",systems:[{id:"ve-p",name:"Vene e Ritorno Venoso",treatments:[]},{id:"ve-m",name:"Microcircolo Venoso",treatments:[]}]}
+];
+
+let SECTORS = SB;
+const ALL = [];
+
+function rebuildAll(){
+  ALL.length=0;
+  SECTORS.forEach(s=>s.systems.forEach(sys=>sys.treatments.forEach(t=>{
+    ALL.push({...t,sectorId:s.id,sectorName:s.name,sectorIcon:s.icon,sectorColor:s.color,sectorGradient:s.gradient,systemName:sys.name,systemId:sys.id});
+  })));
+}
+
+// ============================================
+// LOAD DATA FROM FIREBASE
+// ============================================
+async function loadFromFirebase() {
+  try {
+    // Treatments
+    const treatDoc = await db.collection('site').doc('treatments').get();
+    if (treatDoc.exists) {
+      const d = treatDoc.data();
+      SECTORS.forEach(s => s.systems.forEach(sys => { if(d[sys.id]) sys.treatments = d[sys.id]; }));
+    }
+    rebuildAll();
+
+    // Homepage
+    const hpDoc = await db.collection('site').doc('homepage').get();
+    if (hpDoc.exists) {
+      const d = hpDoc.data();
+      if(d.badge) document.getElementById('ed-badge').textContent = d.badge;
+      if(d.title) document.getElementById('ed-hero-title').innerHTML = d.title;
+      if(d.text) document.getElementById('ed-hero-text').textContent = d.text;
+      if(d.btn1) document.getElementById('ed-btn1').textContent = d.btn1;
+      if(d.btn2) document.getElementById('ed-btn2').textContent = d.btn2;
+    }
+
+    // Chi Sono
+    const csDoc = await db.collection('site').doc('chisono').get();
+    if (csDoc.exists) {
+      const d = csDoc.data();
+      if(d.title) document.getElementById('ed-cs-title').textContent = d.title;
+      if(d.text1) document.getElementById('ed-cs-text1').textContent = d.text1;
+      if(d.text2) document.getElementById('ed-cs-text2').textContent = d.text2;
+      if(d.emoji) document.getElementById('ed-cs-emoji').textContent = d.emoji;
+    }
+
+    // Servizi
+    const srvDoc = await db.collection('site').doc('servizi').get();
+    if (srvDoc.exists && srvDoc.data().items) {
+      const items = srvDoc.data().items;
+      const colors = ['rgba(8,145,178,.08)','rgba(21,101,168,.08)','rgba(34,211,238,.08)'];
+      document.getElementById('servicesCards').innerHTML = items.map((s,i) =>
+        `<div class="card fade-in" onclick="goPage('shop')"><div class="card-icon" style="background:${colors[i]||colors[0]};">${s.icon}</div><h3>${s.title}</h3><p>${s.text}</p><span class="card-tag">Esplora →</span></div>`
+      ).join('');
+    }
+
+    // Contatti
+    const ctDoc = await db.collection('site').doc('contatti').get();
+    if (ctDoc.exists) {
+      const d = ctDoc.data();
+      if(d.email) document.getElementById('ed-email').textContent = d.email;
+      if(d.phone) document.getElementById('ed-phone').textContent = d.phone;
+      if(d.address) document.getElementById('ed-address').textContent = d.address;
+      if(d.hours) document.getElementById('ed-hours').textContent = d.hours;
+    }
+
+    // Testimonianze
+    const testiSnap = await db.collection('testimonials').get();
+    if (!testiSnap.empty) {
+      document.getElementById('testiGrid').innerHTML = testiSnap.docs.map(doc => {
+        const t = doc.data();
+        return `<div class="test-card fade-in">
+          <div class="test-stars">${'★'.repeat(t.stars||5)}${'☆'.repeat(5-(t.stars||5))}</div>
+          <div class="test-text">"${t.text}"</div>
+          <div class="test-author">${t.author}</div>
+          <div class="test-role">${t.role}</div>
+        </div>`;
+      }).join('');
+    }
+
+  } catch(e) {
+    console.log('Firebase load error:', e);
+  }
+}
+
+// ============================================
+// SHOP
+// ============================================
+let shopView='sectors', curSector=null, curSystem=null, cart=[];
+
+function goPage(page, section){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.remove('active'));
+  const n=document.getElementById('nav-'+page);if(n)n.classList.add('active');
+  if(page==='shop'){shopView='sectors';renderShop();window.scrollTo({top:0});}
+  else if(section)setTimeout(()=>document.getElementById(section).scrollIntoView({behavior:'smooth'}),100);
+  else window.scrollTo({top:0});
+}
+
+function renderShop(){
+  const c=document.getElementById('shopContent');
+  if(shopView==='sectors')renderSectors(c);
+  else if(shopView==='systems')renderSystems(c);
+  else if(shopView==='treatments')renderTreatments(c);
+  else if(shopView==='detail')renderDetail(c);
+}
+
+function renderSectors(c){
+  c.innerHTML='<div class="sectors-grid">'+SECTORS.map(s=>{
+    const tot=s.systems.reduce((n,sys)=>n+sys.treatments.length,0);
+    return`<div class="sector-card" onclick="openSector('${s.id}')"><div class="s-icon">${s.icon}</div><div class="s-name">${s.name}</div><div class="s-desc">${s.description}</div><div class="s-count">${tot?tot+' trattamenti →':s.systems.length+' sistemi →'}</div></div>`;
+  }).join('')+'</div>';
+}
+
+function openSector(id){curSector=SECTORS.find(s=>s.id===id);shopView='systems';renderShop();}
+
+function renderSystems(c){
+  const s=curSector;
+  let h=`<button class="shop-back" onclick="shopView='sectors';renderShop();">← Tutti i Settori</button><div style="display:flex;align-items:center;gap:14px;margin-bottom:28px;"><span style="font-size:38px;">${s.icon}</span><div><h2 style="font-family:'Playfair Display',serif;font-size:28px;color:var(--deep);margin:0;">${s.name}</h2><p style="font-size:13px;color:var(--muted);margin-top:4px;">${s.description}</p></div></div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;">`;
+  s.systems.forEach(sys=>{
+    const n=sys.treatments.length;
+    h+=`<div class="system-card" onclick="openSystem('${sys.id}')"><div style="font-size:17px;font-weight:600;color:var(--deep);margin-bottom:8px;">${sys.name}</div><div style="font-size:12px;color:var(--muted);margin-bottom:16px;">${n?n+' trattamenti':'Nessun trattamento inserito'}</div>`;
+    if(n){sys.treatments.slice(0,3).forEach(t=>{h+=`<div style="padding:8px 12px;background:var(--warm);border-radius:10px;margin-bottom:6px;font-size:12px;font-weight:600;color:var(--deep);">${t.name}</div>`;});}
+    else{h+=`<div style="padding:16px;background:var(--warm);border-radius:10px;text-align:center;border:2px dashed var(--sand);font-size:12px;color:var(--light);">📋 Da compilare</div>`;}
+    h+=`<div style="text-align:right;font-size:10px;color:var(--teal);font-weight:600;margin-top:12px;">APRI →</div></div>`;
+  });
+  h+='</div>';c.innerHTML=h;
+}
+
+function openSystem(id){curSystem=curSector.systems.find(s=>s.id===id);shopView='treatments';renderShop();}
+
+function renderTreatments(c){
+  const s=curSector,sys=curSystem;
+  let h=`<button class="shop-back" onclick="shopView='systems';renderShop();">← ${s.name}</button><div style="margin-bottom:28px;"><div style="font-size:11px;color:var(--light);margin-bottom:6px;">${s.icon} ${s.name}</div><h2 style="font-family:'Playfair Display',serif;font-size:28px;color:var(--deep);margin:0;">${sys.name}</h2></div>`;
+  if(sys.treatments.length){
+    sys.treatments.forEach(t=>{
+      h+=`<div class="treatment-row" onclick="openDetail('${t.id}')"><div style="width:80px;height:80px;min-width:80px;border-radius:14px;background:${s.gradient};display:flex;align-items:center;justify-content:center;font-size:28px;opacity:.7;">${s.icon}</div><div style="flex:1;"><div style="font-size:17px;font-weight:600;color:var(--deep);">${t.name}</div><div style="font-size:12px;color:var(--muted);margin-top:2px;">${t.subtitle||''}</div>${t.description?`<div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5;">${t.description.substring(0,120)}...</div>`:''}</div><div style="font-size:12px;color:var(--teal);font-weight:600;">DETTAGLI →</div></div>`;
+    });
+  } else {
+    h+=`<div style="text-align:center;padding:60px;color:var(--light);"><div style="font-size:48px;margin-bottom:16px;">📋</div><div>Nessun trattamento disponibile</div></div>`;
+  }
+  c.innerHTML=h;
+}
+
+function openDetail(id){window._did=id;shopView='detail';renderShop();}
+
+function renderDetail(c){
+  const t=ALL.find(x=>x.id===window._did);if(!t)return;
+  let h=`<button class="shop-back" onclick="shopView='treatments';renderShop();">← ${t.systemName}</button><div style="max-width:700px;margin:0 auto;">`;
+  h+=`<div class="detail-section" style="text-align:center;padding:40px;"><div style="font-size:12px;color:var(--light);margin-bottom:8px;">${t.sectorIcon} ${t.sectorName} → ${t.systemName}</div><h1 style="font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:var(--deep);margin:0;">${t.name}</h1>${t.subtitle?`<div style="font-size:15px;color:var(--muted);margin-top:6px;">${t.subtitle}</div>`:''}<div style="display:flex;justify-content:center;gap:24px;margin-top:20px;font-size:13px;color:var(--light);flex-wrap:wrap;">${t.duration?`<span>⏱ ${t.duration}</span>`:''}${t.hz?`<span>〰 ${t.hz}</span>`:''}${t.differential?`<span>🔊 ${t.differential}</span>`:''}</div></div>`;
+  h+=`<div class="detail-section" style="padding:0;overflow:hidden;"><div style="height:200px;background:linear-gradient(135deg,rgba(8,145,178,.06),rgba(21,101,168,.04));display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;"><span style="font-size:60px;">${t.sectorIcon}</span></div></div>`;
+  if(t.presentation)h+=`<div class="detail-section"><h3>Presentazione</h3><p style="font-size:14px;line-height:1.8;color:var(--muted);">${t.presentation}</p></div>`;
+  if(t.description)h+=`<div class="detail-section"><h3>Descrizione</h3><p style="font-size:14px;line-height:1.8;color:var(--muted);">${t.description}</p></div>`;
+  if(t.benefits&&t.benefits.length)h+=`<div class="detail-section"><h3>Benefici</h3><div class="benefits-grid">${t.benefits.map(b=>`<div class="benefit-item"><span style="color:var(--teal);">✦</span>${b}</div>`).join('')}</div></div>`;
+  if(t.target)h+=`<div class="detail-section"><h3>A Chi è Rivolto</h3><p style="font-size:14px;line-height:1.8;color:var(--muted);">${t.target}</p></div>`;
+  if(t.hz||t.differential||t.duration)h+=`<div class="detail-section"><h3>Specifiche Tecniche</h3><div class="specs-grid">${t.hz?`<div class="spec-item"><div class="sp-label">Frequenze</div><div class="sp-value">${t.hz}</div></div>`:''} ${t.differential?`<div class="spec-item"><div class="sp-label">Differenziale</div><div class="sp-value">${t.differential}</div></div>`:''} ${t.duration?`<div class="spec-item"><div class="sp-label">Durata</div><div class="sp-value">${t.duration}</div></div>`:''}<div class="spec-item"><div class="sp-label">Formato</div><div class="sp-value">WAV 24-bit</div></div></div></div>`;
+  h+=`<div style="background:rgba(8,145,178,.04);border-radius:16px;padding:20px;border:1px solid rgba(8,145,178,.1);margin-bottom:24px;display:flex;gap:12px;"><span style="font-size:20px;">🔒</span><div style="font-size:12px;color:var(--muted);line-height:1.7;"><strong>Protezione contenuti:</strong> Streaming protetto AES-128 per 30 giorni.</div></div>`;
+  h+=`<div style="background:var(--white);border-radius:18px;padding:28px;border:1px solid var(--sand);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;"><div><div style="font-size:18px;font-weight:600;color:var(--deep);">${t.price?'CHF '+t.price:'Prezzo da definire'}</div><div style="font-size:12px;color:var(--muted);">Accesso streaming • 30 giorni</div></div><div style="display:flex;gap:12px;"><button class="shop-back" onclick="shopView='treatments';renderShop();" style="margin:0;">← Indietro</button><button onclick="addToCart('${t.id}')" style="padding:14px 30px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--teal),var(--blue));color:white;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">🛒 Aggiungi al Carrello</button></div></div></div>`;
+  c.innerHTML=h;
+}
+
+// SEARCH
+function doSearch(){
+  const q=document.getElementById('searchInput').value.toLowerCase().trim();
+  const dd=document.getElementById('searchDropdown'),cb=document.getElementById('searchClear');
+  cb.style.display=q?'block':'none';
+  if(q.length<2){dd.classList.remove('active');return;}
+  const r=ALL.filter(t=>(t.name||'').toLowerCase().includes(q)||(t.subtitle||'').toLowerCase().includes(q)||(t.tags||[]).some(tag=>tag.includes(q))||(t.systemName||'').toLowerCase().includes(q)||(t.sectorName||'').toLowerCase().includes(q));
+  dd.innerHTML=r.length===0?'<div style="padding:24px;text-align:center;color:var(--light);">Nessun risultato</div>':r.map(t=>`<div class="search-item" onclick="clearSearch();openDetail('${t.id}');"><span style="font-size:22px;">${t.sectorIcon}</span><div><div style="font-size:14px;font-weight:600;">${t.name}</div><div style="font-size:11px;color:var(--light);">${t.sectorName} → ${t.systemName}</div></div><div style="margin-left:auto;font-size:11px;color:var(--teal);font-weight:600;">DETTAGLI →</div></div>`).join('');
+  dd.classList.add('active');
+}
+function clearSearch(){document.getElementById('searchInput').value='';document.getElementById('searchDropdown').classList.remove('active');document.getElementById('searchClear').style.display='none';}
+
+// CART
+function addToCart(id){
+  if(cart.find(c=>c.id===id)){showNotif('Già nel carrello!');return;}
+  const t=ALL.find(x=>x.id===id);
+  if(t){cart.push(t);updateCart();showNotif('Aggiunto!');}
+}
+function removeFromCart(id){cart=cart.filter(c=>c.id!==id);updateCart();}
+function toggleCart(){document.getElementById('cartOverlay').classList.toggle('open');updateCart();}
+function updateCart(){
+  const b=document.getElementById('cartBadge');
+  b.style.display=cart.length>0?'flex':'none';b.textContent=cart.length;
+  document.getElementById('cartCount').textContent=cart.length+' trattamenti';
+  const body=document.getElementById('cartBody'),footer=document.getElementById('cartFooter');
+  if(!cart.length){body.innerHTML='<div style="text-align:center;padding:60px 0;color:var(--light);"><div style="font-size:48px;margin-bottom:16px;">🛒</div>Il carrello è vuoto</div>';footer.style.display='none';return;}
+  body.innerHTML=cart.map(i=>`<div style="background:var(--white);border-radius:14px;padding:16px;margin-bottom:12px;border:1px solid var(--sand);"><div style="display:flex;justify-content:space-between;"><div><div style="font-size:15px;font-weight:600;color:var(--deep);">${i.name}</div><div style="font-size:10px;color:var(--teal);margin-top:6px;">🔒 Streaming 30 giorni</div></div><button onclick="removeFromCart('${i.id}')" style="background:rgba(239,68,68,.08);border:none;color:#ef4444;width:28px;height:28px;border-radius:50%;cursor:pointer;">✕</button></div><div style="text-align:right;font-size:14px;font-weight:600;color:var(--deep);margin-top:8px;">${i.price?'CHF '+i.price:'Da definire'}</div></div>`).join('');
+  footer.style.display='block';
+  footer.innerHTML='<button onclick="alert(\'Collegamento a Stripe in arrivo!\')" style="width:100%;padding:16px;border:none;border-radius:14px;font-size:15px;font-weight:600;font-family:\'Outfit\',sans-serif;cursor:pointer;background:linear-gradient(135deg,var(--teal),var(--blue));color:white;">PROCEDI ALL\'ACQUISTO →</button>';
+}
+
+function showNotif(msg){
+  const e=document.getElementById('notification');e.textContent=msg;e.classList.add('show');
+  setTimeout(()=>e.classList.remove('show'),2000);
+}
+
+// INIT
+window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('scrolled',window.scrollY>50);});
+const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}});},{threshold:.15});
+document.querySelectorAll('.fade-in').forEach(el=>obs.observe(el));
+
+// Load data from Firebase on startup
+loadFromFirebase();
+</script>
+</body>
+</html>
